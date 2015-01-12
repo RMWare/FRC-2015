@@ -68,7 +68,7 @@ class AutonomousModeManager(object):
 			try:
 				module = imp.load_source(module_name, module_filename)
 			except:
-				if not self.ds.IsFMSAttached():
+				if not self.ds.isFMSAttached():
 					raise
 
 			#
@@ -90,13 +90,13 @@ class AutonomousModeManager(object):
 						instance = obj(components)
 					except:
 
-						if not self.ds.IsFMSAttached():
+						if not self.ds.isFMSAttached():
 							raise
 						else:
 							continue
 
 					if instance.MODE_NAME in self.modes:
-						if not self.ds.IsFMSAttached():
+						if not self.ds.isFMSAttached():
 							raise RuntimeError("Duplicate name %s in %s" % (instance.MODE_NAME, module_filename))
 
 						print("ERROR: Duplicate name %s specified by object type %s in module %s" % (
@@ -117,7 +117,7 @@ class AutonomousModeManager(object):
 		print("Loaded autonomous modes:")
 		for k, v in sorted(self.modes.items()):
 
-			if hasattr(v, 'DEFAULT') and v.DEFAULT == True:
+			if hasattr(v, 'DEFAULT') and v.DEFAULT is True:
 				print(" -> %s [Default]" % k)
 				self.chooser.addDefault(k, v)
 				default_modes.append(k)
@@ -159,16 +159,15 @@ class AutonomousModeManager(object):
 		print("AutonomousModeManager::Autonomous() Begins")
 
 		# don't risk the watchdog, hopefully we do everything right here :)
-		robot.GetWatchdog().SetEnabled(False)
 
 		# keep track of how much time has passed in autonomous mode
 		timer = wpilib.Timer()
-		timer.Start()
+		timer.start()
 
 		try:
 			self.on_autonomous_enable()
 		except:
-			if not self.ds.IsFMSAttached():
+			if not self.ds.isFMSAttached():
 				raise
 
 		#
@@ -177,12 +176,12 @@ class AutonomousModeManager(object):
 
 		delay = PreciseDelay(control_loop_wait_time)
 
-		while robot.IsAutonomous() and robot.IsEnabled():
+		while robot.isAutonomous() and robot.isEnabled():
 
 			try:
 				self.update(timer.get())
 			except:
-				if not self.ds.IsFMSAttached():
+				if not self.ds.isFMSAttached():
 					raise
 
 			robot.update()
@@ -196,7 +195,7 @@ class AutonomousModeManager(object):
 		try:
 			self.on_autonomous_disable()
 		except:
-			if not self.ds.IsFMSAttached():
+			if not self.ds.isFMSAttached():
 				raise
 
 		print("AutonomousModeManager::Autonomous() Done")

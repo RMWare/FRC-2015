@@ -89,7 +89,7 @@ class StatefulAutonomous(object):
 		self.__sd_args = []
 
 		self.__build_states()
-		self.__tunables = wpilib.StringArray()
+		#self.__tunables = wpilib.SmartDashboard.putData()
 
 	def register_sd_var(self, name, default, add_prefix=True, vmin=-1, vmax=1):
 		is_number = self.__register_sd_var_internal(name, default, add_prefix, True)
@@ -101,8 +101,8 @@ class StatefulAutonomous(object):
 		if is_number:
 			name = '%s|%0.3f|%0.3f' % (name, vmin, vmax)
 
-		self.__tunables.add(name)
-		self.__table.putData(self.MODE_NAME + '_tunables', self.__tunables)
+		#self.__tunables.add(name)
+		#self.__table.putData(self.MODE_NAME + '_tunables', self.__tunables)
 
 	def __register_sd_var_internal(self, name, default, add_prefix, readback):
 
@@ -114,16 +114,16 @@ class StatefulAutonomous(object):
 
 		if isinstance(default, bool):
 			self.__table.putBoolean(sd_name, default)
-			args = (name, sd_name, self.__table.GetBoolean)
+			args = (name, sd_name, self.__table.getBoolean)
 
 		elif isinstance(default, int) or isinstance(default, float):
 			self.__table.putNumber(sd_name, default)
-			args = (name, sd_name, self.__table.GetNumber)
+			args = (name, sd_name, self.__table.getNumber)
 			is_number = True
 
 		elif isinstance(default, str):
 			self.__table.putString(sd_name, default)
-			args = (name, sd_name, self.__table.GetString)
+			args = (name, sd_name, self.__table.getString)
 
 		else:
 			raise ValueError("Invalid default value")
@@ -177,19 +177,19 @@ class StatefulAutonomous(object):
 
 		sorted_states = sorted(states.items())
 
-		array = wpilib.StringArray()
+		#array = wpilib.StringArray()
 
-		for k, (name, desc) in sorted_states:
-			array.add(name)
+		#for k, (name, desc) in sorted_states:
+		#	array.add(name)
 
-		self.__table.putData(self.MODE_NAME + '_durations', array)
+		#self.__table.putData(self.MODE_NAME + '_durations', array)
 
-		array = wpilib.StringArray()
+		#array = wpilib.StringArray()
 
-		for k, (name, desc) in sorted_states:
-			array.add(desc)
+		#for k, (name, desc) in sorted_states:
+		#	array.add(desc)
 
-		self.__table.putData(self.MODE_NAME + '_descriptions', array)
+		#self.__table.putData(self.MODE_NAME + '_descriptions', array)
 
 		if not has_first:
 			raise ValueError("Starting state not defined! Use first=True on a state decorator")
@@ -213,7 +213,7 @@ class StatefulAutonomous(object):
 
 		# print out the details of this autonomous mode, and any tunables
 
-		self.battery_voltage = wpilib.DriverStation.getInstance().GetBatteryVoltage()
+		self.battery_voltage = wpilib.DriverStation.getInstance().getBatteryVoltage()
 		print("Battery voltage: %.02fv" % self.battery_voltage)
 
 		print("Tunable values:")

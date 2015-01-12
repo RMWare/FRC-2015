@@ -5,7 +5,7 @@ try:
 except ImportError:
 	from pyfrc import wpilib
 
-from components import drive
+from components import drive, motor_tester
 # TODO from components import intake and elevator
 from common import delay
 from autonomous import AutonomousModeManager
@@ -37,6 +37,8 @@ class Drake(wpilib.SampleRobot):
 		self.test_motor = wpilib.Talon(0)
 		self.test_motor.label = 'test_motor'
 
+		self.motortest = motor_tester.MotorTester(self.test_motor)
+
 		# self.l_motor = wpilib.Talon(0)
 		# self.l_motor.label = 'l_motor'
 		#
@@ -60,18 +62,19 @@ class Drake(wpilib.SampleRobot):
 			#'drive': self.drive,
 			# 'intake': self.intake,
 			# 'elevator': self.elevator,
+			'motortest': self.motortest
 		}
 
 		self.sd_timer = wpilib.Timer()  # timer for smartdashboard so we don't use all our bandwidth
 		self.sd_timer.start()
 		self.control_loop_wait_time = 0.025
-		self.autonomous = AutonomousModeManager(self.components)
+		self.auton_manager = AutonomousModeManager(self.components)
 
 	def autonomous(self):
 		""" Called when the robot is in autonomous mode	"""
 
 		wpilib.SmartDashboard.putNumber('RobotMode', MODE_AUTONOMOUS)
-		self.autonomous.run(self, self.control_loop_wait_time)
+		self.auton_manager.run(self, self.control_loop_wait_time)
 
 	def disabled(self):
 		""" Called when the robot is in disabled mode """
@@ -94,7 +97,7 @@ class Drake(wpilib.SampleRobot):
 			"""
 				Testing stuff
 			"""
-			self.test_motor.set(self.stick.getRawAxis(1))
+			#self.test_motor.set(self.stick.getRawAxis(1))
 
 			"""
 				Driving
@@ -130,7 +133,8 @@ class Drake(wpilib.SampleRobot):
 
 	def update_smartdashboard(self):
 		if self.sd_timer.hasPeriodPassed(0.1):  # we don't need to update every cycle
-			wpilib.SmartDashboard.putNumber('TestEncoder', self.test_encoder.get())
+			pass
+			#wpilib.SmartDashboard.putNumber('TestEncoder', self.test_encoder.get())
 
 if __name__ == "__main__":
 	wpilib.run(Drake)
