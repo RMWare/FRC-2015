@@ -3,17 +3,17 @@
 
 class _MotorConstants(object):  # all pins should be different
 	# Drive
-	drive_left_1 = 0
-	drive_left_2 = 1
-	drive_right_1 = 2
-	drive_right_2 = 3
+	drive_left_1 = 3
+	drive_left_2 = 4
+	drive_right_1 = 5
+	drive_right_2 = 6
 
 	# Intake
-	intake_l = 4
-	intake_r = 5
+	intake_l = 0
+	intake_r = 7
 
 	# Elevator
-	elevator_motor = 6
+	elevator_motor = 1 # also TODO 1 2 8 pin
 
 
 class _SolenoidConstants(object):

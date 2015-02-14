@@ -49,7 +49,7 @@ class Drake(wpilib.SampleRobot):
 		self.drive = drive.Drive()
 		self.intake = intake.Intake()
 		self.elevator = elevator.Elevator()
-		self.components = {'drive': self.drive, 'intake': self.intake, 'elevator': self.elevator}
+		self.components = {'drive': self.drive}#, 'intake': self.intake, 'elevator': self.elevator}
 
 		self.sd_timer = wpilib.Timer()  # timer for smartdashboard so we don't use all our bandwidth
 		self.sd_timer.start()
@@ -84,12 +84,13 @@ class Drake(wpilib.SampleRobot):
 				Driving
 			"""
 
-			self.drive.move(self.stick.getX(), self.stick.getY(), self.stick.getRawButton(1)) # TODO BUTTON
+			self.drive.move(self.stick.getRawAxis(4), self.stick.getRawAxis(1), self.stick.getRawButton(5)) # TODO BUTTON
 
 			"""
 				State Machine
 			"""
 
+			"""
 			if self.stick.getRawButton(2):  # TODO button
 				self.intake.intaking = True
 				self.elevator.prepare_to_stack()
@@ -100,7 +101,7 @@ class Drake(wpilib.SampleRobot):
 					pass  # rails out
 				elif self.stick.getRawButton(5):  # TODO
 					pass  # rails in
-
+			"""
 			"""
 				Misc.
 			"""
