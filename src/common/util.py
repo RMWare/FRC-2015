@@ -38,16 +38,3 @@ def wrap_accumulator(acc):
 	else:
 		acc = 0
 	return acc
-
-
-class MotorGroup(object):
-	def __init__(self, controller, *args):  # type being a motor controller, args being numbers.
-		object.__setattr__(self, 'motors', [controller(i) for i in args])
-		print(self.motors)
-
-	def __getattr__(self, item):
-		return object.__getattribute__(self.motors[0], item)
-
-	def __setattr__(self, key, value):
-		for motor in self.motors:
-			setattr(motor, key, value)
