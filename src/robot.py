@@ -1,27 +1,37 @@
 #!/usr/bin/env python3
+from enum import Enum
 
 try:
 	import wpilib
 except ImportError:
 	from pyfrc import wpilib
 
-from components import drive, motor_tester
-# TODO from components import intake and elevator
+from components import drive, intake, elevator
 from common import delay
 from autonomous import AutonomousModeManager
 import logging
+
 log = logging.getLogger("robot")
 
 # to stay in sync with our driver station
-MODE_DISABLED     = 0
-MODE_AUTONOMOUS   = 1
+MODE_DISABLED = 0
+MODE_AUTONOMOUS = 1
 MODE_TELEOPERATED = 2
+
+
+class States(Enum):
+	NEUTRAL = 0
+	INTAKE = 1
+	ABANDON = 2
 
 
 class Drake(wpilib.SampleRobot):
 	"""
 		The heart of the robit
 	"""
+
+	def robotInit(self):
+		pass  # this is just to stop wpilib from complaining
 
 	def __init__(self):
 		super().__init__()
@@ -32,38 +42,14 @@ class Drake(wpilib.SampleRobot):
 
 		self.stick = wpilib.Joystick(0)
 
-		# Motors
-
-		self.test_motor = wpilib.Talon(0)
-		self.test_motor.label = 'test_motor'
-
-		self.motortest = motor_tester.MotorTester(self.test_motor)
-
-		# self.l_motor = wpilib.Talon(0)
-		# self.l_motor.label = 'l_motor'
-		#
-		# self.r_motor = wpilib.Talon(1)
-		# self.r_motor.label = 'r_motor'
-
-		#self.robot_drive = wpilib.RobotDrive(self.l_motor, self.r_motor)
-
-		# Sensors
-
-		self.test_encoder = wpilib.Encoder(0, 1)
-		self.gyro = None  # TODO
-
 		"""
 			Initializing components
 		"""
 
-		#self.drive = drive.Drive(self.robot_drive, self.gyro)
-
-		self.components = {
-			#'drive': self.drive,
-			# 'intake': self.intake,
-			# 'elevator': self.elevator,
-			'motortest': self.motortest
-		}
+		self.drive = drive.Drive()
+		self.intake = intake.Intake()
+		self.elevator = elevator.Elevator()
+		self.components = {'drive': self.drive, 'intake': self.intake, 'elevator': self.elevator}
 
 		self.sd_timer = wpilib.Timer()  # timer for smartdashboard so we don't use all our bandwidth
 		self.sd_timer.start()
@@ -95,27 +81,25 @@ class Drake(wpilib.SampleRobot):
 		while self.isOperatorControl() and self.isEnabled():
 
 			"""
-				Testing stuff
-			"""
-			#self.test_motor.set(self.stick.getRawAxis(1))
-
-			"""
 				Driving
 			"""
 
-			#self.drive.move(self.stick.getX(), self.stick.getY())
+			self.drive.move(self.stick.getX(), self.stick.getY(), self.stick.getRawButton(1)) # TODO BUTTON
 
 			"""
-				Intake
+				State Machine
 			"""
 
-			# blah blah blah
-
-			"""
-				Elevator
-			"""
-
-			# doop de derp
+			if self.stick.getRawButton(2):  # TODO button
+				self.intake.intaking = True
+				self.elevator.prepare_to_stack()
+			else:  # abandon
+				if self.stick.getRawButton(3):  # TODO button
+					self.elevator.tote_offset()
+				if self.stick.getRawButton(4):  # TODO
+					pass  # rails out
+				elif self.stick.getRawButton(5):  # TODO
+					pass  # rails in
 
 			"""
 				Misc.
@@ -132,9 +116,11 @@ class Drake(wpilib.SampleRobot):
 			component.update()
 
 	def update_smartdashboard(self):
-		if self.sd_timer.hasPeriodPassed(0.1):  # we don't need to update every cycle
-			pass
-			#wpilib.SmartDashboard.putNumber('TestEncoder', self.test_encoder.get())
+		if not self.sd_timer.hasPeriodPassed(0.1):  # we don't need to update every cycle
+			return
+
+
+		# wpilib.SmartDashboard.putNumber('TestEncoder', self.test_encoder.get())
 
 if __name__ == "__main__":
 	wpilib.run(Drake)

@@ -9,15 +9,12 @@ class PressureSensor(object):
 		self.analog_in = analog_in
 		self.psi = 0
 
-	def getPSI(self):
-		return self.psi
-
 	#
 	# Actually does stuff
 	#
 
 	def update(self):
 		""" actually does stuff"""
-		val = self.analog_in.getVoltage()
+		self.psi = self.analog_in.getVoltage()  # TODO Convert from voltage to PSI
 		# what do
 

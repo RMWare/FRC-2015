@@ -27,6 +27,7 @@ def timed_state(f=None, duration=None, next_state=None, first=False):
 	if f is None:
 		return functools.partial(timed_state, duration=duration, next_state=next_state, first=first)
 
+	# noinspection PyShadowingNames
 	@functools.wraps(f)
 	def wrapper(*args, **kwargs):
 		return f(*args, **kwargs)
@@ -69,6 +70,7 @@ def timed_state(f=None, duration=None, next_state=None, first=False):
 	return wrapper
 
 
+# noinspection PyMethodMayBeStatic,PyAttributeOutsideInit,PyUnresolvedReferences,PyUnusedLocal,PyUnusedLocal
 class StatefulAutonomous(object):
 	"""
 		TODO: document this
@@ -76,6 +78,8 @@ class StatefulAutonomous(object):
 
 	__built = False
 	__done = False
+
+	battery_voltage = 0
 
 	def __init__(self, components):
 

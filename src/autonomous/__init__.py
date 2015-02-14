@@ -36,6 +36,7 @@ except ImportError:
 	from pyfrc import wpilib
 
 
+# noinspection PyDeprecation
 class AutonomousModeManager(object):
 	"""
 		The autonomous manager loads all autonomous mode modules and allows
@@ -70,6 +71,8 @@ class AutonomousModeManager(object):
 			except:
 				if not self.ds.isFMSAttached():
 					raise
+				else:
+					continue  # skip this one
 
 			#
 			# Find autonomous mode classes in the modules that are present
@@ -135,14 +138,13 @@ class AutonomousModeManager(object):
 			self.chooser.addDefault('None', None)
 		elif len(default_modes) != 1:
 			if not self.ds.IsFMSAttached():
-				raise RuntimeError("More than one autonomous mode was specified as default! (modes: %s)" % (', '.join(default_modes)))
+				raise RuntimeError("More than one auton mode was specified as default! (modes: %s)" % (', '.join(default_modes)))
 
 
 		# must PutData after setting up objects
 		sd.putData('Autonomous Mode', self.chooser)
 
 		print("AutonomousModeManager::__init__() Done")
-
 
 	def run(self, robot, control_loop_wait_time):
 		"""

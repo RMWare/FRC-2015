@@ -1,3 +1,6 @@
+from common import util, constants
+from common.util import MotorGroup
+
 try:
 	import wpilib
 except ImportError:
@@ -11,22 +14,23 @@ class Drive(object):
 		through this class.
 	"""
 
-	def __init__(self, robot_drive, gyro):
+	old_wheel = 0
+	wheel = 0
+	throttle = 0
+	quickturn = False
+	quickstop_accumulator = 0
+
+	throttle_deadband = 0.02
+	wheel_deadband = 0.02
+	sensitivity = .75
+
+	def __init__(self):
 		"""
 			Constructor.
-
-			:param robot_drive: a `wpilib.RobotDrive` object
 		"""
 
-		# set defaults here
-		self.wheel = 0
-		self.throttle = 0
-		self.gyro = gyro
-
-		self.angle_constant = .040
-		self.gyro_enabled = True
-
-		self.robot_drive = robot_drive
+		self.l_motor = MotorGroup(wpilib.Talon, constants.motors.drive_left_1, constants.motors.drive_left_2)
+		self.r_motor = MotorGroup(wpilib.Talon, constants.motors.drive_right_1, constants.motors.drive_right_2)
 
 	#
 	# Verb functions -- these functions do NOT talk to motors directly. This
@@ -34,7 +38,7 @@ class Drive(object):
 	# conflicts.
 	#
 
-	def move(self, wheel, throttle):
+	def move(self, wheel, throttle, quickturn):
 		"""
 			Causes the robot to move
 
@@ -44,50 +48,66 @@ class Drive(object):
 
 		self.wheel = wheel
 		self.throttle = throttle
-
-	def set_gyro_enabled(self, value):
-		self.gyro_enabled = value
-
-	def return_gyro_angle(self):
-		return self.gyro.GetAngle()
-
-	def reset_gyro_angle(self):
-		self.gyro.Reset()
-
-	def set_angle_constant(self, constant):
-		"""Sets the constant that is used to determine the robot turning speed"""
-		self.angle_constant = constant
-
-	def angle_rotation(self, target_angle):
-		"""
-			Adjusts the robot so that it points at a particular angle. Returns True
-			if the robot is near the target angle, False otherwise
-
-			:param target_angle: Angle to point at, in degrees
-
-			:returns: True if near angle, False otherwise
-		"""
-
-		if not self.gyro_enabled:
-			return False
-
-		angle_offset = target_angle - self.return_gyro_angle()
-
-		if angle_offset < -1 or angle_offset > 1:
-			self.wheel = angle_offset * self.angle_constant
-			self.wheel = max(min(0.5, self.wheel), -0.5)
-
-			return False
-
-		return True
+		self.quickturn = quickturn
 
 	#
 	# Actually tells the motors to do something
 	#
 
 	def update(self):
-		""" actually does stuff"""
-		self.robot_drive.arcadeDrive(self.throttle, self.wheel)
+		""" cheesy drive! """
+
+		wheel = util.deadband(self.wheel, self.wheel_deadband)
+		throttle = util.deadband(self.throttle, self.throttle_deadband)
+		neg_intertia = wheel - self.old_wheel
+		self.old_wheel = wheel
+		wheel = util.sin_scale(wheel, 0.5, passes=3)
+
+		if wheel * neg_intertia > 0:
+			neg_intertia_scalar = 2.5
+		else:
+			if abs(wheel) > .65:
+				neg_intertia_scalar = 5
+			else:
+				neg_intertia_scalar = 3
+
+		neg_intertia_accumulator = neg_intertia * neg_intertia_scalar
+
+		wheel += neg_intertia_accumulator
+
+		if self.quickturn:
+			if abs(throttle) < 0.2:
+				alpha = .1
+				self.quickstop_accumulator = (1 - alpha) * self.quickstop_accumulator + alpha * util.limit(wheel, 1.0) * 5
+			over_power = 1
+			angular_power = wheel
+		else:
+			over_power = 0
+			angular_power = abs(throttle) * wheel * self.sensitivity - self.quickstop_accumulator
+			self.quickstop_accumulator = util.wrap_accumulator(self.quickstop_accumulator)
+
+		right_pwm = left_pwm = throttle
+
+		left_pwm += angular_power
+		right_pwm -= angular_power
+
+		if left_pwm > 1:
+			right_pwm -= over_power * (left_pwm - 1)
+			left_pwm = 1
+		elif right_pwm > 1:
+			left_pwm -= over_power * (right_pwm - 1)
+			right_pwm = 1
+		elif left_pwm < -1:
+			right_pwm += over_power * (-1 - left_pwm)
+			left_pwm = -1
+		elif right_pwm < -1:
+			left_pwm += over_power * (-1 - right_pwm)
+			right_pwm = -1
+
+		self.l_motor.set(left_pwm)
+		self.r_motor.set(right_pwm)
+
+
 		# print('wheel=%s, throttle=%s ' % (self.wheel, self.throttle))
 
 		# by default, the robot shouldn't move
