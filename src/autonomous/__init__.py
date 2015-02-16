@@ -23,6 +23,7 @@
 """
 
 from glob import glob
+# noinspection PyDeprecation
 import imp
 import inspect
 import os

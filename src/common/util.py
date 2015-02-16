@@ -38,3 +38,34 @@ def wrap_accumulator(acc):
 	else:
 		acc = 0
 	return acc
+
+
+class PWMSyncGroup(object):
+	def __init__(self, cls, pins):
+		if len(pins) == 0:
+			raise ValueError("No pins provided!")
+		object.__setattr__(self, "_pwm", [cls(pin) for pin in pins])
+
+	def __getattribute__(self, item):
+		ret = getattr(object.__getattribute__(self, "_pwm")[0], item)
+		if hasattr(ret, "__call__"):
+			return object.__getattribute__(self, "FunctionWrapper")(self, item)
+		return ret
+
+	class FunctionWrapper(object):
+		def __init__(self, parent, func_name):
+			self.parent = parent
+			self.func_name = func_name
+
+		def __call__(self, *args, **kwargs):
+			for pwm in object.__getattribute__(self.parent, "_pwm"):
+				item_func = getattr(pwm, self.func_name)
+				ret = item_func(*args, **kwargs)
+			return ret  # will return result of last call.
+
+	def __setattr__(self, key, value):
+		for pwm in object.__getattribute__(self, "_pwm"):
+			setattr(pwm, key, value)
+
+	def __repr__(self):
+		return "PWMSyncGroup(%s)" % repr(object.__getattribute__(self, "_pwm"))

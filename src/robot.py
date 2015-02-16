@@ -8,6 +8,7 @@ except ImportError:
 
 from components import drive, intake, elevator
 from common import delay
+from common import constants as C
 from autonomous import AutonomousModeManager
 import logging
 
@@ -36,9 +37,7 @@ class Drake(wpilib.SampleRobot):
 	def __init__(self):
 		super().__init__()
 
-		log.info("Robit is booted")
-
-		# Controllers
+		log.info("Initializing Subsystems")
 
 		self.stick = wpilib.Joystick(0)
 
@@ -49,9 +48,9 @@ class Drake(wpilib.SampleRobot):
 		self.drive = drive.Drive()
 		self.intake = intake.Intake()
 		self.elevator = elevator.Elevator()
-		self.components = {'drive': self.drive}#, 'intake': self.intake, 'elevator': self.elevator}
+		self.components = {'drive': self.drive, 'intake': self.intake}#, 'elevator': self.elevator}
 
-		self.sd_timer = wpilib.Timer()  # timer for smartdashboard so we don't use all our bandwidth
+		self.sd_timer = wpilib.Timer()  # timer for SmartDashboard update so we don't use all our bandwidth
 		self.sd_timer.start()
 		self.control_loop_wait_time = 0.025
 		self.auton_manager = AutonomousModeManager(self.components)
@@ -79,32 +78,23 @@ class Drake(wpilib.SampleRobot):
 		precise_delay = delay.PreciseDelay(self.control_loop_wait_time)
 
 		while self.isOperatorControl() and self.isEnabled():
+			# Driving
+			self.drive.move(self.stick.getRawAxis(C.controls.wheel),
+			                self.stick.getRawAxis(C.controls.throttle),
+			                self.stick.getRawButton(C.controls.quickturn))
 
-			"""
-				Driving
-			"""
+			# State Machine
 
-			self.drive.move(self.stick.getRawAxis(4), self.stick.getRawAxis(1), self.stick.getRawButton(5)) # TODO BUTTON
-
-			"""
-				State Machine
-			"""
-
-			"""
-			if self.stick.getRawButton(2):  # TODO button
-				self.intake.intaking = True
+			if self.stick.getRawButton(C.controls.stack):
+				self.intake._intaking = True
 				self.elevator.prepare_to_stack()
 			else:  # abandon
-				if self.stick.getRawButton(3):  # TODO button
+				if self.stick.getRawButton(C.controls.offset):
 					self.elevator.tote_offset()
-				if self.stick.getRawButton(4):  # TODO
-					pass  # rails out
-				elif self.stick.getRawButton(5):  # TODO
+				if self.stick.getRawButton(C.controls.rails):
+					self.elevator.extend_rails()  # rails out
+				else:
 					pass  # rails in
-			"""
-			"""
-				Misc.
-			"""
 
 			self.update_smartdashboard()
 			self.update()
@@ -122,6 +112,7 @@ class Drake(wpilib.SampleRobot):
 
 
 		# wpilib.SmartDashboard.putNumber('TestEncoder', self.test_encoder.get())
+
 
 if __name__ == "__main__":
 	wpilib.run(Drake)

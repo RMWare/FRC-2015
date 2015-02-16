@@ -28,23 +28,15 @@ class Drive(object):
 			Constructor.
 		"""
 
-		self.l_motor_1 = wpilib.Talon(constants.motors.drive_left_1)
-		self.l_motor_2 = wpilib.Talon(constants.motors.drive_left_2)
-		self.r_motor_1 = wpilib.Talon(constants.motors.drive_right_1)
-		self.r_motor_2 = wpilib.Talon(constants.motors.drive_right_2)
-
-	#
-	# Verb functions -- these functions do NOT talk to motors directly. This
-	# allows multiple callers in the loop to call our functions without 
-	# conflicts.
-	#
+		self.l_motor = util.PWMSyncGroup(wpilib.Talon, constants.motors.drive_left)
+		self.r_motor = util.PWMSyncGroup(wpilib.Talon, constants.motors.drive_right)
 
 	def move(self, wheel, throttle, quickturn):
 		"""
-			Causes the robot to move
-
+			Causes the robot to drive
 			:param wheel: The speed that the robot should turn in the X direction. 1 is right [-1.0..1.0]
 			:param throttle: The speed that the robot should drive in the Y direction. -1 is forward. [-1.0..1.0]
+			:param
 		"""
 
 		self.wheel = util.deadband(wheel, 0.1)
@@ -105,12 +97,8 @@ class Drive(object):
 			left_pwm += over_power * (-1 - right_pwm)
 			right_pwm = -1
 
-		self.l_motor_1.set(-left_pwm)
-		self.l_motor_2.set(-left_pwm)
-		self.r_motor_1.set(right_pwm)
-		self.r_motor_2.set(right_pwm)
-
-
+		self.l_motor.set(-left_pwm)
+		self.r_motor.set(right_pwm)
 		# print('wheel=%s, throttle=%s ' % (self.wheel, self.throttle))
 
 		# by default, the robot shouldn't move

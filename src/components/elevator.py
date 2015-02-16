@@ -49,11 +49,6 @@ class Elevator(object):
 		
 		self.state = _State.braked
 		self.set_level(1)
-		
-	def prepare_to_stack(self):
-		if self.state == _State.braked:
-			self.set_level(2)
-			self.state = _State.moving_to_wait
 
 	def update(self):
 		if self.state == _State.waiting:
@@ -149,3 +144,12 @@ class Elevator(object):
 	
 	def tote_offset(self):
 		self.offset = -TOTE_HEIGHT/2
+
+	def zero(self):
+		if self.state == _State.braked:
+			self.state = _State.zeroing
+
+	def prepare_to_stack(self):
+		if self.state == _State.braked:
+			self.set_level(2)
+			self.state = _State.moving_to_wait

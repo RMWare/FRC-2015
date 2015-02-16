@@ -3,17 +3,15 @@
 
 class _MotorConstants(object):  # all pins should be different
 	# Drive
-	drive_left_1 = 3
-	drive_left_2 = 4
-	drive_right_1 = 5
-	drive_right_2 = 6
+	drive_left = [3, 4]
+	drive_right = [5, 6]
 
 	# Intake
 	intake_l = 0
 	intake_r = 7
 
 	# Elevator
-	elevator_motor = 1 # also TODO 1 2 8 pin
+	elevator_motor = [1, 2, 8]
 
 
 class _SolenoidConstants(object):
@@ -39,7 +37,17 @@ class _PIDConstants(object):
 	kD_elevator_down = 0.0
 
 
+class _ControllerConstants(object):
+	wheel = 4
+	throttle = 1
+	quickturn = 5
+
+	stack = 0
+	offset = 0
+	rails = 0
+
 motors = _MotorConstants()
 pids = _PIDConstants()
 solenoids = _SolenoidConstants()
 sensors = _SensorConstants()
+controls = _ControllerConstants()
