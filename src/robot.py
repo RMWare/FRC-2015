@@ -47,7 +47,7 @@ class Drake(wpilib.SampleRobot):
 
 		self.drive = drive.Drive()
 		self.intake = intake.Intake()
-		self.elevator = elevator.Elevator()
+		#self.elevator = elevator.Elevator()
 		self.components = {'drive': self.drive, 'intake': self.intake}#, 'elevator': self.elevator}
 
 		self.sd_timer = wpilib.Timer()  # timer for SmartDashboard update so we don't use all our bandwidth
@@ -85,6 +85,7 @@ class Drake(wpilib.SampleRobot):
 
 			# State Machine
 
+			"""
 			if self.stick.getRawButton(C.controls.stack):
 				self.intake._intaking = True
 				self.elevator.prepare_to_stack()
@@ -93,8 +94,7 @@ class Drake(wpilib.SampleRobot):
 					self.elevator.tote_offset()
 				if self.stick.getRawButton(C.controls.rails):
 					self.elevator.extend_rails()  # rails out
-				else:
-					pass  # rails in
+			"""
 
 			self.update_smartdashboard()
 			self.update()

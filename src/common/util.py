@@ -40,7 +40,7 @@ def wrap_accumulator(acc):
 	return acc
 
 
-class PWMSyncGroup(object):
+class SyncGroup(object):
 	def __init__(self, cls, pins):
 		if len(pins) == 0:
 			raise ValueError("No pins provided!")

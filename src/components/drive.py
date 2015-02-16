@@ -28,8 +28,8 @@ class Drive(object):
 			Constructor.
 		"""
 
-		self.l_motor = util.PWMSyncGroup(wpilib.Talon, constants.motors.drive_left)
-		self.r_motor = util.PWMSyncGroup(wpilib.Talon, constants.motors.drive_right)
+		self.l_motor = util.SyncGroup(wpilib.Talon, constants.motors.drive_left)
+		self.r_motor = util.SyncGroup(wpilib.Talon, constants.motors.drive_right)
 
 	def move(self, wheel, throttle, quickturn):
 		"""
@@ -39,7 +39,7 @@ class Drive(object):
 			:param
 		"""
 
-		self.wheel = util.deadband(wheel, 0.1)
+		self.wheel = util.deadband(-wheel, 0.1)
 		self.throttle = util.deadband(throttle, 0.1)
 		self.quickturn = quickturn
 

@@ -37,6 +37,8 @@ class Elevator(object):
 		self.encoder = wpilib.Encoder(constants.sensors.elevator_encoder_a, constants.sensors.elevator_encoder_b)
 		self.halleffect = wpilib.DigitalInput(constants.sensors.elevator_hall_effect)
 		self.photosensor = wpilib.DigitalInput(constants.sensors.photosensor)
+		self.rails = None
+
 
 		self.ramp_position = 0
 		self.prev_error = 0
@@ -49,6 +51,8 @@ class Elevator(object):
 		
 		self.state = _State.braked
 		self.set_level(1)
+
+		self.rails_extended = False
 
 	def update(self):
 		if self.state == _State.waiting:
@@ -153,3 +157,6 @@ class Elevator(object):
 		if self.state == _State.braked:
 			self.set_level(2)
 			self.state = _State.moving_to_wait
+
+	def extend_rails(self):
+		self.rails_extended = True
