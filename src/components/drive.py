@@ -5,21 +5,17 @@ from common import util, constants
 
 class TankDrive(object):
 	def __init__(self):
-		"""
-			Constructor.
-		"""
-
 		self.l_motor = util.SyncGroup(Talon, constants.motors.drive_left)
 		self.r_motor = util.SyncGroup(Talon, constants.motors.drive_right)
 		self.left = 0
 		self.right = 0
 
 	def move(self, left, right):
+		# Applies a bit of exponential scaling to improve control at low speeds
 		self.left = math.copysign(math.pow(left, 2), left)
 		self.right = math.copysign(math.pow(right, 2), right)
 
 	def update(self):
-		""" tank drive! """
 		self.l_motor.set(-self.left)
 		self.r_motor.set(self.right)
 		self.left = 0
@@ -27,12 +23,6 @@ class TankDrive(object):
 
 
 class CheesyDrive(object):
-	"""
-		The sole interaction between the robot and its driving system
-		occurs here. Anything that wants to drive the robot must go
-		through this class.
-	"""
-
 	old_wheel = 0
 	wheel = 0
 	throttle = 0
@@ -44,10 +34,6 @@ class CheesyDrive(object):
 	sensitivity = .75
 
 	def __init__(self):
-		"""
-			Constructor.
-		"""
-
 		self.l_motor = util.SyncGroup(Talon, constants.motors.drive_left)
 		self.r_motor = util.SyncGroup(Talon, constants.motors.drive_right)
 
@@ -56,20 +42,14 @@ class CheesyDrive(object):
 			Causes the robot to drive
 			:param wheel: The speed that the robot should turn in the X direction. 1 is right [-1.0..1.0]
 			:param throttle: The speed that the robot should drive in the Y direction. -1 is forward. [-1.0..1.0]
-			:param
+			:param quickturn: If the robot should drive arcade-drive style
 		"""
 
 		self.wheel = util.deadband(-wheel, 0.1)
 		self.throttle = util.deadband(throttle, 0.1)
 		self.quickturn = quickturn
 
-	#
-	# Actually tells the motors to do something
-	#
-
 	def update(self):
-		""" cheesy drive! """
-
 		wheel = util.deadband(self.wheel, self.wheel_deadband)
 		throttle = util.deadband(self.throttle, self.throttle_deadband)
 		neg_intertia = wheel - self.old_wheel
@@ -119,8 +99,6 @@ class CheesyDrive(object):
 
 		self.l_motor.set(-left_pwm)
 		self.r_motor.set(right_pwm)
-		# print('wheel=%s, throttle=%s ' % (self.wheel, self.throttle))
-
 		# by default, the robot shouldn't move
 		self.wheel = 0
 		self.throttle = 0

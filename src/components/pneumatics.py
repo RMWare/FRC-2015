@@ -3,7 +3,7 @@ from wpilib import Compressor
 
 class Pneumatics(object):
 	def __init__(self):
-		self.comp = Compressor()
+		self.comp = Compressor(1)
 
 	def update(self):
-		self.comp.setClosedLoopControl(True)
+		self.comp.start()
