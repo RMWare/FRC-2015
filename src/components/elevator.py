@@ -1,11 +1,7 @@
 from enum import Enum
 import math
+from wpilib import DigitalInput, Encoder, Solenoid, Talon
 from common import constants, util
-
-try:
-	import wpilib
-except ImportError:
-	from pyfrc import wpilib
 
 PITCH_DIAMETER = 1.432
 TICKS_PER_REVOLUTION = 128
@@ -32,11 +28,11 @@ class Elevator(object):
 	tolerance = 32
 
 	def __init__(self):
-		self.motor = wpilib.Talon(constants.motors.elevator_motor)
-		self.brake = wpilib.Solenoid(constants.solenoids.disc_brake)
-		self.encoder = wpilib.Encoder(constants.sensors.elevator_encoder_a, constants.sensors.elevator_encoder_b)
-		self.halleffect = wpilib.DigitalInput(constants.sensors.elevator_hall_effect)
-		self.photosensor = wpilib.DigitalInput(constants.sensors.photosensor)
+		self.motor = Talon(constants.motors.elevator_motor)
+		self.brake = Solenoid(constants.solenoids.disc_brake)
+		self.encoder = Encoder(constants.sensors.elevator_encoder_a, constants.sensors.elevator_encoder_b)
+		self.halleffect = DigitalInput(constants.sensors.elevator_hall_effect)
+		self.photosensor = DigitalInput(constants.sensors.photosensor)
 		self.rails = None
 
 

@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 from enum import Enum
+import wpilib
+from wpilib import SampleRobot, Joystick, Timer, SmartDashboard
 
-try:
-	import wpilib
-except ImportError:
-	from pyfrc import wpilib
-
-from components import drive, intake, elevator
+from components import drive, intake, pneumatics, elevator
 from common import delay
 from common import constants as C
 from autonomous import AutonomousModeManager
@@ -26,7 +23,7 @@ class States(Enum):
 	ABANDON = 2
 
 
-class Drake(wpilib.SampleRobot):
+class Drake(SampleRobot):
 	"""
 		The heart of the robit
 	"""
@@ -37,56 +34,56 @@ class Drake(wpilib.SampleRobot):
 	def __init__(self):
 		super().__init__()
 
+		self.stick = Joystick(0)
+
 		log.info("Initializing Subsystems")
 
-		self.stick = wpilib.Joystick(0)
-
-		"""
-			Initializing components
-		"""
-
-		self.drive = drive.Drive()
+		self.drive = drive.TankDrive()
+		self.pneumatics = pneumatics.Pneumatics()
 		self.intake = intake.Intake()
 		#self.elevator = elevator.Elevator()
-		self.components = {'drive': self.drive, 'intake': self.intake}#, 'elevator': self.elevator}
+		self.components = {
+			'drive': self.drive,
+			'pneumatics': self.pneumatics,
+			'intake': self.intake
+		}  # , 'elevator': self.elevator}
 
-		self.sd_timer = wpilib.Timer()  # timer for SmartDashboard update so we don't use all our bandwidth
+		self.sd_timer = Timer()  # timer for SmartDashboard update so we don't use all our bandwidth
 		self.sd_timer.start()
 		self.control_loop_wait_time = 0.025
 		self.auton_manager = AutonomousModeManager(self.components)
+		log.info("Ready!")
 
 	def autonomous(self):
 		""" Called when the robot is in autonomous mode	"""
 
-		wpilib.SmartDashboard.putNumber('RobotMode', MODE_AUTONOMOUS)
+		SmartDashboard.putNumber('RobotMode', MODE_AUTONOMOUS)
 		self.auton_manager.run(self, self.control_loop_wait_time)
 
 	def disabled(self):
 		""" Called when the robot is in disabled mode """
 
-		wpilib.SmartDashboard.putNumber('RobotMode', MODE_DISABLED)
+		SmartDashboard.putNumber('RobotMode', MODE_DISABLED)
 
 		while self.isDisabled():
 			self.update_smartdashboard()
-			wpilib.Timer.delay(0.01)
+			Timer.delay(0.01)
 
 	def operatorControl(self):
 		""" Called when the robot is in teleoperated mode """
 
-		wpilib.SmartDashboard.putNumber('RobotMode', MODE_TELEOPERATED)
-
+		SmartDashboard.putNumber('RobotMode', MODE_TELEOPERATED)
 		precise_delay = delay.PreciseDelay(self.control_loop_wait_time)
 
 		while self.isOperatorControl() and self.isEnabled():
 			# Driving
-			self.drive.move(self.stick.getRawAxis(C.controls.wheel),
-			                self.stick.getRawAxis(C.controls.throttle),
-			                self.stick.getRawButton(C.controls.quickturn))
+			self.drive.move(self.stick.getRawAxis(C.controls.left),
+			                self.stick.getRawAxis(C.controls.right))
 
 			# State Machine
 
 			"""
-			if self.stick.getRawButton(C.controls.stack):
+			if self.stick.getRawAxis(C.controls.stack) > 0.75:
 				self.intake._intaking = True
 				self.elevator.prepare_to_stack()
 			else:  # abandon
@@ -111,7 +108,7 @@ class Drake(wpilib.SampleRobot):
 			return
 
 
-		# wpilib.SmartDashboard.putNumber('TestEncoder', self.test_encoder.get())
+		# SmartDashboard.putNumber('TestEncoder', self.test_encoder.get())
 
 
 if __name__ == "__main__":

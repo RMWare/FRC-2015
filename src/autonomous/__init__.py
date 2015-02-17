@@ -31,11 +31,7 @@ import sys
 
 from common.delay import PreciseDelay
 
-try:
-	import wpilib
-except ImportError:
-	from pyfrc import wpilib
-
+import wpilib
 
 # noinspection PyDeprecation
 class AutonomousModeManager(object):

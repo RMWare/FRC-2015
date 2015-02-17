@@ -1,9 +1,5 @@
 # Written by FRC1418
-
-try:
-    import wpilib
-except ImportError:
-    from pyfrc import wpilib
+from wpilib import Timer
 
 
 class PreciseDelay(object):
@@ -22,7 +18,7 @@ class PreciseDelay(object):
     def __init__(self, delay_period):
         """ :param delay_period: The amount of time to do a delay """
         
-        self.timer = wpilib.Timer()        
+        self.timer = Timer()
         self.delay_period = delay_period
         
         self.timer.start()
@@ -31,7 +27,7 @@ class PreciseDelay(object):
         """ Waits until the delay period has passed """
         
         # we must *always* yield here, so other things can run
-        wpilib.Timer.delay(0.001)
+        Timer.delay(0.001)
         
         while not self.timer.hasPeriodPassed(self.delay_period):
-            wpilib.Timer.delay(0.001)
+            Timer.delay(0.001)

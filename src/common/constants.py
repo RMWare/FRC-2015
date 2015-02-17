@@ -38,13 +38,13 @@ class _PIDConstants(object):
 
 
 class _ControllerConstants(object):
-	wheel = 4
-	throttle = 1
-	quickturn = 5
+	left = 1
+	right = 5
 
-	stack = 0
-	offset = 0
-	rails = 0
+	stack = 3
+
+	offset = 5
+	rails = 6
 
 motors = _MotorConstants()
 pids = _PIDConstants()

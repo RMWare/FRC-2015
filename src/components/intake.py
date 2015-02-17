@@ -1,8 +1,4 @@
-try:
-	import wpilib
-except ImportError:
-	from pyfrc import wpilib
-
+from wpilib import Solenoid, Talon
 from common import constants
 
 
@@ -10,10 +6,10 @@ class Intake(object):
 	_intaking = False
 
 	def __init__(self):
-		self._lmotor = wpilib.Talon(constants.motors.intake_l)
-		self._rmotor = wpilib.Talon(constants.motors.intake_r)
-		self._l_piston = wpilib.Solenoid(constants.solenoids.intake_l)
-		self._r_piston = wpilib.Solenoid(constants.solenoids.intake_r)
+		self._lmotor = Talon(constants.motors.intake_l)
+		self._rmotor = Talon(constants.motors.intake_r)
+		self._l_piston = Solenoid(constants.solenoids.intake_l)
+		self._r_piston = Solenoid(constants.solenoids.intake_r)
 
 	def update(self):
 		if self._intaking:

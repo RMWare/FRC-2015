@@ -1,12 +1,32 @@
+import math
+from wpilib import Talon
 from common import util, constants
 
-try:
-	import wpilib
-except ImportError:
-	from pyfrc import wpilib
+
+class TankDrive(object):
+	def __init__(self):
+		"""
+			Constructor.
+		"""
+
+		self.l_motor = util.SyncGroup(Talon, constants.motors.drive_left)
+		self.r_motor = util.SyncGroup(Talon, constants.motors.drive_right)
+		self.left = 0
+		self.right = 0
+
+	def move(self, left, right):
+		self.left = math.copysign(math.pow(left, 2), left)
+		self.right = math.copysign(math.pow(right, 2), right)
+
+	def update(self):
+		""" tank drive! """
+		self.l_motor.set(-self.left)
+		self.r_motor.set(self.right)
+		self.left = 0
+		self.right = 0
 
 
-class Drive(object):
+class CheesyDrive(object):
 	"""
 		The sole interaction between the robot and its driving system
 		occurs here. Anything that wants to drive the robot must go
@@ -28,8 +48,8 @@ class Drive(object):
 			Constructor.
 		"""
 
-		self.l_motor = util.SyncGroup(wpilib.Talon, constants.motors.drive_left)
-		self.r_motor = util.SyncGroup(wpilib.Talon, constants.motors.drive_right)
+		self.l_motor = util.SyncGroup(Talon, constants.motors.drive_left)
+		self.r_motor = util.SyncGroup(Talon, constants.motors.drive_right)
 
 	def move(self, wheel, throttle, quickturn):
 		"""
