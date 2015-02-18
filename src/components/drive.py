@@ -1,12 +1,13 @@
 import math
 from wpilib import Talon
 from common import util, constants
+from common.syncgroup import SyncGroup
 
 
 class TankDrive(object):
 	def __init__(self):
-		self.l_motor = util.SyncGroup(Talon, constants.motors.drive_left)
-		self.r_motor = util.SyncGroup(Talon, constants.motors.drive_right)
+		self.l_motor = SyncGroup(Talon, constants.motors.drive_left)
+		self.r_motor = SyncGroup(Talon, constants.motors.drive_right)
 		self.left = 0
 		self.right = 0
 
@@ -18,8 +19,6 @@ class TankDrive(object):
 	def update(self):
 		self.l_motor.set(-self.left)
 		self.r_motor.set(self.right)
-		self.left = 0
-		self.right = 0
 
 
 class CheesyDrive(object):
@@ -34,8 +33,8 @@ class CheesyDrive(object):
 	sensitivity = .75
 
 	def __init__(self):
-		self.l_motor = util.SyncGroup(Talon, constants.motors.drive_left)
-		self.r_motor = util.SyncGroup(Talon, constants.motors.drive_right)
+		self.l_motor = SyncGroup(Talon, constants.motors.drive_left)
+		self.r_motor = SyncGroup(Talon, constants.motors.drive_right)
 
 	def move(self, wheel, throttle, quickturn):
 		"""
@@ -99,6 +98,3 @@ class CheesyDrive(object):
 
 		self.l_motor.set(-left_pwm)
 		self.r_motor.set(right_pwm)
-		# by default, the robot shouldn't move
-		self.wheel = 0
-		self.throttle = 0

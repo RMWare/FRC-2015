@@ -2,6 +2,7 @@ from enum import Enum
 import math
 from wpilib import DigitalInput, Encoder, Solenoid, Talon
 from common import constants, util
+from common.syncgroup import SyncGroup
 
 PITCH_DIAMETER = 1.432
 TICKS_PER_REVOLUTION = 128
@@ -13,13 +14,13 @@ TOTE_HEIGHT = 12.1 * INCHES_PER_TICK
 # we need a max_speed variable that's just calculated errors averaged out @ full speed
 
 
-class _State(Enum):
-	braked = 0
-	moving = 1
-	zeroing = 2
-	waiting = 3
-	picking_up = 4
-	moving_to_wait = 5
+class States(Enum):
+	BRAKED = 0
+	MOVING = 1
+	ZEROING = 2
+	WAITING = 3
+	PICKING_UP = 4
+	MOVING_TO_WAIT = 5
 
 
 class Elevator(object):
@@ -28,13 +29,12 @@ class Elevator(object):
 	tolerance = 32
 
 	def __init__(self):
-		self.motor = Talon(constants.motors.elevator_motor)
+		self.motor = SyncGroup(Talon, constants.motors.elevator_motor)
 		self.brake = Solenoid(constants.solenoids.disc_brake)
 		self.encoder = Encoder(constants.sensors.elevator_encoder_a, constants.sensors.elevator_encoder_b)
 		self.halleffect = DigitalInput(constants.sensors.elevator_hall_effect)
 		self.photosensor = DigitalInput(constants.sensors.photosensor)
-		self.rails = None
-
+		self.arms = Solenoid(constants.solenoids.arms)
 
 		self.ramp_position = 0
 		self.prev_error = 0
@@ -45,29 +45,29 @@ class Elevator(object):
 		self.old_pos = 0
 		self.offset = False
 		
-		self.state = _State.braked
+		self.state = States.BRAKED
 		self.set_level(1)
 
 		self.rails_extended = False
 
 	def update(self):
-		if self.state == _State.waiting:
+		if self.state == States.WAITING:
 			if self.photosensor.get():  # tote is in robot!
 				self.old_pos = self.desired_position
 				self.set_level(0, force=True)
-				self.state = _State.picking_up
+				self.state = States.PICKING_UP
 			
-		if self.state in [_State.moving, _State.moving_to_wait, _State.picking_up]:
+		if self.state in [States.MOVING, States.MOVING_TO_WAIT, States.PICKING_UP]:
 			curr_height = self.encoder.getDistance()
 			curr_error = self.ramp_position - curr_height
 			
 			if abs(curr_error) < self.tolerance:  # at setpoint
-				if self.state == _State.moving_to_wait:
-					self.state = _State.waiting
-				if self.state == _State.picking_up:  # go back to old pos
+				if self.state == States.MOVING_TO_WAIT:
+					self.state = States.WAITING
+				if self.state == States.PICKING_UP:  # go back to old pos
 					self.set_level(pos=self.old_pos, force=True)
-				elif self.state == _State.moving:
-					self.state = _State.braked
+				elif self.state == States.MOVING:
+					self.state = States.BRAKED
 			else:
 				derivative = curr_error - self.prev_error
 				self.integral += curr_error
@@ -101,16 +101,16 @@ class Elevator(object):
 				self.motor.set(power)
 				self.prev_error = curr_error
 
-		if self.state == _State.zeroing:
+		if self.state == States.ZEROING:
 			if self.encoder.getDistance() < (3 * (1/INCHES_PER_TICK)):
 				self.motor.set(-.2)
 				if self.encoder.getDistance() < 0:
 					self.reset_encoder()
 			if self.halleffect.get():
 				self.reset_encoder()
-				self.state = _State.braked
+				self.state = States.BRAKED
 				
-		if self.state == _State.braked:
+		if self.state == States.BRAKED:
 			self.motor.set(0)
 			self.brake.set(True)
 		
@@ -121,15 +121,15 @@ class Elevator(object):
 			return
 		
 		if level == -1 and pos == -1:
-			raise ValueError("Neither level nor pos were passed! you must pass one")
+			raise ValueError("set_level was passed neither a level or a position. You must pass one")
 		elif not level == -1 and not pos == -1:
-			raise ValueError("You passed a level and a pos! please only use one.")
+			raise ValueError("set_level was passed a level and a position. Please only use one.")
 		
 		if pos == -1:
 			pos = level * TOTE_HEIGHT * INCHES_PER_TICK
 		
 		if not self.desired_position == pos:
-			self.state = _State.moving
+			self.state = States.MOVING
 			self.desired_position = pos
 			self.ramp_position = 0
 			self.integral = 0
@@ -146,13 +146,13 @@ class Elevator(object):
 		self.offset = -TOTE_HEIGHT/2
 
 	def zero(self):
-		if self.state == _State.braked:
-			self.state = _State.zeroing
+		if self.state == States.BRAKED:
+			self.state = States.ZEROING
 
 	def prepare_to_stack(self):
-		if self.state == _State.braked:
+		if self.state == States.BRAKED:
 			self.set_level(2)
-			self.state = _State.moving_to_wait
+			self.state = States.MOVING_TO_WAIT
 
 	def extend_rails(self):
 		self.rails_extended = True

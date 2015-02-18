@@ -3,26 +3,34 @@ from common import constants
 
 
 class Intake(object):
-	_intaking = False
 
 	def __init__(self):
 		self._lmotor = Talon(constants.motors.intake_l)
 		self._rmotor = Talon(constants.motors.intake_r)
-		self._l_piston = Solenoid(constants.solenoids.intake_l)
-		self._r_piston = Solenoid(constants.solenoids.intake_r)
+		self._piston = Solenoid(1, constants.solenoids.intake)
+
+
+		self._intaking = False
+		self._open = False
 
 	def update(self):
 		if self._intaking:
 			self._lmotor.set(1)
-			self._rmotor.set(1)
-			self._l_piston.set(True)
-			self._r_piston.set(True)
+			self._rmotor.set(-1)
 		else:
 			self._lmotor.set(0)
 			self._rmotor.set(0)
-			self._l_piston.set(False)
-			self._r_piston.set(False)
-		self._intaking = False  # resets
+
+		if self._open:
+			self._piston.set(False)
+		else:
+			self._piston.set(True)
+
+		self._intaking = False
+		self._open = False
 
 	def run_intake(self):
-		self._intaking  = True
+		self._intaking = True
+
+	def open(self):
+		self._open = True
