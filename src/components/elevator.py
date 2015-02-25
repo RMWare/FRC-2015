@@ -20,7 +20,6 @@ class States(Enum):
 	ZEROING = 2
 	WAITING = 3
 	PICKING_UP = 4
-	MOVING_TO_WAIT = 5
 
 
 class Elevator(object):
@@ -34,7 +33,6 @@ class Elevator(object):
 		self.encoder = Encoder(constants.sensors.elevator_encoder_a, constants.sensors.elevator_encoder_b)
 		self.halleffect = DigitalInput(constants.sensors.elevator_hall_effect)
 		self.photosensor = DigitalInput(constants.sensors.photosensor)
-		self.arms = Solenoid(constants.solenoids.arms)
 
 		self.ramp_position = 0
 		self.prev_error = 0
@@ -51,19 +49,18 @@ class Elevator(object):
 		self.rails_extended = False
 
 	def update(self):
-		if self.state == States.WAITING:
-			if self.photosensor.get():  # tote is in robot!
-				self.old_pos = self.desired_position
-				self.set_level(0, force=True)
-				self.state = States.PICKING_UP
 			
 		if self.state in [States.MOVING, States.MOVING_TO_WAIT, States.PICKING_UP]:
 			curr_height = self.encoder.getDistance()
 			curr_error = self.ramp_position - curr_height
 			
 			if abs(curr_error) < self.tolerance:  # at setpoint
-				if self.state == States.MOVING_TO_WAIT:
-					self.state = States.WAITING
+				if self.state == States.WAITING:
+					if self.photosensor.get():  # tote is in robot!
+						self.old_pos = self.desired_position
+						self.set_level(0, force=True)
+						self.state = States.PICKING_UP
+
 				if self.state == States.PICKING_UP:  # go back to old pos
 					self.set_level(pos=self.old_pos, force=True)
 				elif self.state == States.MOVING:
@@ -153,6 +150,3 @@ class Elevator(object):
 		if self.state == States.BRAKED:
 			self.set_level(2)
 			self.state = States.MOVING_TO_WAIT
-
-	def extend_rails(self):
-		self.rails_extended = True

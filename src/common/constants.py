@@ -16,7 +16,6 @@ class _MotorConstants(object):  # all pins should be different
 
 class _SolenoidConstants(object):
 	disc_brake = 2
-	arms = 3
 	intake = 0
 	outtake = 1
 
