@@ -11,8 +11,6 @@ INCHES_PER_TICK = (PITCH_DIAMETER * math.pi) / TICKS_PER_REVOLUTION
 
 TOTE_HEIGHT = 12.1 * INCHES_PER_TICK
 
-# we need a max_speed variable that's just calculated errors averaged out @ full speed
-
 
 class States(Enum):
 	BRAKED = 0
@@ -23,9 +21,7 @@ class States(Enum):
 
 
 class Elevator(object):
-	ramp_ticks = 1000  # how long it takes to go from start to finish
-	max_speed = 1 * INCHES_PER_TICK  # ticks / second
-	tolerance = 32
+	pid_tolerance = 32
 
 	def __init__(self):
 		self.motor = SyncGroup(Talon, constants.motors.elevator_motor)
@@ -34,7 +30,6 @@ class Elevator(object):
 		self.halleffect = DigitalInput(constants.sensors.elevator_hall_effect)
 		self.photosensor = DigitalInput(constants.sensors.photosensor)
 
-		self.ramp_position = 0
 		self.prev_error = 0
 		self.integral = 0
 		self.desired_position = 0
@@ -51,10 +46,10 @@ class Elevator(object):
 	def update(self):
 			
 		if self.state in [States.MOVING, States.PICKING_UP]:
-			curr_height = self.encoder.getDistance()
-			curr_error = self.ramp_position - curr_height
+			current_position = self.encoder.getDistance()
+			curr_error = self.desired_position - current_position
 			
-			if abs(curr_error) < self.tolerance:  # at setpoint
+			if abs(curr_error) < self.pid_tolerance:  # at setpoint
 				if self.state == States.WAITING:
 					if self.photosensor.get():  # tote is in robot!
 						self.old_pos = self.desired_position
@@ -63,6 +58,7 @@ class Elevator(object):
 
 				if self.state == States.PICKING_UP:  # go back to old pos
 					self.set_level(pos=self.old_pos, force=True)
+
 				elif self.state == States.MOVING:
 					self.state = States.BRAKED
 			else:
@@ -70,8 +66,6 @@ class Elevator(object):
 				self.integral += curr_error
 
 				self.brake.set(False)
-				self.ramp_position += (self.desired_position + self.offset) / self.ramp_ticks
-				self.ramp_position = util.limit(self.ramp_position, self.desired_position + self.offset)
 
 				if curr_error > 0:
 					kP = constants.pids.kP_elevator_up

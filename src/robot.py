@@ -80,13 +80,12 @@ class Drake(SampleRobot):
 			# State Machine
 			if self.stick.getRawAxis(c.controls.right_trigger) > 0.25:
 				self.intake.run_intake()
-				#self.elevator.prepare_to_stack()
+				self.elevator.prepare_to_stack()
 			else:  # abandon
-				pass
-			# 	if self.stick.getRawButton(c.controls.offset):
-			# 		self.elevator.tote_offset()
-			# 	if self.stick.getRawButton(c.controls.rails):
-			# 		self.intake.extend_rails()  # rails out
+				if self.stick.getRawButton(c.controls.offset):
+					self.elevator.tote_offset()
+				if self.stick.getRawButton(c.controls.rails):
+					self.intake.extend_rails()  # rails out
 
 			if self.elevator.state == elevator.States.PICKING_UP or self.stick.getRawButton(c.controls.right_button):
 				self.intake.open()
@@ -106,8 +105,9 @@ class Drake(SampleRobot):
 			return
 		pass
 
+
 if __name__ == "__main__":
 	run(Drake)
 
-	# TODO TUNE PID LOOPS AND MAKE suRE IT WORKS ELEVATOOR
-	# TODO abstract methods to run elevator "intake" method at arbitrary levels
+# TODO TUNE PID LOOPS AND MAKE suRE IT WORKS ELEVATOOR
+# TODO abstract methods to run elevator "intake" method at arbitrary levels
