@@ -109,6 +109,5 @@ class Drake(SampleRobot):
 if __name__ == "__main__":
 	run(Drake)
 
-	# TODO turn compressor off when amp draw above threshold
 	# TODO TUNE PID LOOPS AND MAKE suRE IT WORKS ELEVATOOR
 	# TODO abstract methods to run elevator "intake" method at arbitrary levels

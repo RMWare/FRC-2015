@@ -26,10 +26,13 @@ class SyncGroup(object):
 			self.func_name = func_name
 
 		def __call__(self, *args, **kwargs):
+			ret = []
 			for pwm in object.__getattribute__(self.parent, "_items"):
 				item_func = getattr(pwm, self.func_name)
-				ret = item_func(*args, **kwargs)
-			return ret  # Return values are something tricky to deal with.. TODO return all values as list? (breaks proxy)
+				ret.append(item_func(*args, **kwargs))
+			if len(set(ret)) > 1:  # all values are not equal
+				raise AssertionError("All items did not return the same value!!")
+			return set(ret)  # Just return the last one, they should all be synced anyways.
 
 	def __setattr__(self, key, value):
 		for pwm in object.__getattribute__(self, "_items"):

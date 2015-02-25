@@ -13,6 +13,7 @@ class Pneumatics(object):
 		Monitors the PDP for amp draw, and disables the compressor if amp draw is above a threshold to prevent brownouts.
 		:return:
 		"""
+		# TODO getTotalCurrent crashes robot??
 		if self.pdp.getTotalCurrent() > self.AMPERAGE_THRESHOLD:
 			self.comp.stop()
 		else:

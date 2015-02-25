@@ -50,7 +50,7 @@ class Elevator(object):
 
 	def update(self):
 			
-		if self.state in [States.MOVING, States.MOVING_TO_WAIT, States.PICKING_UP]:
+		if self.state in [States.MOVING, States.PICKING_UP]:
 			curr_height = self.encoder.getDistance()
 			curr_error = self.ramp_position - curr_height
 			
