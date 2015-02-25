@@ -1,9 +1,19 @@
-from wpilib import Compressor
+from wpilib import Compressor, PowerDistributionPanel
 
 
 class Pneumatics(object):
+	AMPERAGE_THRESHOLD = 20
+
 	def __init__(self):
-		self.comp = Compressor(1)
+		self.comp = Compressor()
+		self.pdp = PowerDistributionPanel()
 
 	def update(self):
-		self.comp.start()
+		"""
+		Monitors the PDP for amp draw, and disables the compressor if amp draw is above a threshold to prevent brownouts.
+		:return:
+		"""
+		if self.pdp.getTotalCurrent() > self.AMPERAGE_THRESHOLD:
+			self.comp.stop()
+		else:
+			self.comp.start()

@@ -18,6 +18,7 @@ class _SolenoidConstants(object):
 	disc_brake = 2
 	arms = 3
 	intake = 0
+	outtake = 1
 
 
 class _SensorConstants(object):

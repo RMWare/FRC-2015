@@ -56,14 +56,10 @@ class Drake(SampleRobot):
 		log.info("Ready!")
 
 	def autonomous(self):
-		""" Called when the robot is in autonomous mode	"""
-
 		SmartDashboard.putNumber('RobotMode', MODE_AUTONOMOUS)
 		self.auton_manager.run(self, self.control_loop_wait_time)
 
 	def disabled(self):
-		""" Called when the robot is in disabled mode """
-
 		SmartDashboard.putNumber('RobotMode', MODE_DISABLED)
 
 		while self.isDisabled():
@@ -71,8 +67,6 @@ class Drake(SampleRobot):
 			Timer.delay(0.01)
 
 	def operatorControl(self):
-		""" Called when the robot is in teleoperated mode """
-
 		SmartDashboard.putNumber('RobotMode', MODE_TELEOPERATED)
 		precise_delay = delay.PreciseDelay(self.control_loop_wait_time)
 
@@ -84,7 +78,7 @@ class Drake(SampleRobot):
 			)
 
 			# State Machine
-			if self.stick.getRawAxis(c.controls.right_trigger) > 0.75:
+			if self.stick.getRawAxis(c.controls.right_trigger) > 0.25:
 				self.intake.run_intake()
 				#self.elevator.prepare_to_stack()
 			else:  # abandon
@@ -92,7 +86,7 @@ class Drake(SampleRobot):
 			# 	if self.stick.getRawButton(c.controls.offset):
 			# 		self.elevator.tote_offset()
 			# 	if self.stick.getRawButton(c.controls.rails):
-			# 		self.elevator.extend_rails()  # rails out
+			# 		self.intake.extend_rails()  # rails out
 
 			if self.elevator.state == elevator.States.PICKING_UP or self.stick.getRawButton(c.controls.right_button):
 				self.intake.open()
@@ -117,3 +111,4 @@ if __name__ == "__main__":
 
 	# TODO turn compressor off when amp draw above threshold
 	# TODO TUNE PID LOOPS AND MAKE suRE IT WORKS ELEVATOOR
+	# TODO abstract methods to run elevator "intake" method at arbitrary levels
