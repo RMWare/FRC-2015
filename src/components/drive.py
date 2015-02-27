@@ -21,6 +21,8 @@ class Drive(object):
 	SETPOINT_TOLERANCE = 5
 
 	def __init__(self):
+		self.enabled = True
+
 		self.l_motor = SyncGroup(Talon, constants.motors.drive_left)
 		self.r_motor = SyncGroup(Talon, constants.motors.drive_right)
 		self.gyro = Gyro(constants.sensors.gyro)
@@ -112,3 +114,12 @@ class Drive(object):
 	def update(self):
 		self.l_motor.set(self.left_pwm)
 		self.r_motor.set(-self.right_pwm)
+
+	def fail(self):
+		"""
+		Disables EVERYTHING. Only use in case of critical failure/
+		:return:
+		"""
+		self.enabled = False
+		self.l_motor.set(0)
+		self.r_motor.set(0)

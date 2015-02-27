@@ -19,7 +19,6 @@ class DriveStraight(StatefulAutonomous):
 	@timed_state(duration=1, next_state='turn')
 	def forwards(self):
 		self.drive.tank_drive(1, 1)
-		pass
 
 	@state()
 	def turn(self):

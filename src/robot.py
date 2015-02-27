@@ -3,11 +3,9 @@ from enum import Enum
 from wpilib import SampleRobot, Joystick, Timer, SmartDashboard, LiveWindow, run
 
 from components import drive, intake, pneumatics, elevator
-from common import delay
-from common import constants as c
+from common import delay, util, constants
 from robotpy_ext.autonomous import AutonomousModeSelector
 import logging
-import util  # this line serves to initialize our modifications to Units
 
 log = logging.getLogger("robot")
 
@@ -15,12 +13,6 @@ log = logging.getLogger("robot")
 MODE_DISABLED = 0
 MODE_AUTONOMOUS = 1
 MODE_TELEOPERATED = 2
-
-
-class States(Enum):
-	NEUTRAL = 0
-	INTAKE = 1
-	ABANDON = 2
 
 
 class Drake(SampleRobot):
@@ -67,30 +59,33 @@ class Drake(SampleRobot):
 
 		while self.isOperatorControl() and self.isEnabled():
 			# Driving
-			# self.drive.cheesy_drive(self.stick.getRawAxis(c.controls.right_x),
-			#                         -self.stick.getRawAxis(c.controls.left_y),
-			#                         self.stick.getRawButton(c.controls.left_button)
-			# )
+			self.drive.cheesy_drive(self.stick.getRawAxis(constants.controls.right_x),
+			                        -self.stick.getRawAxis(constants.controls.left_y),
+			                        self.stick.getRawButton(constants.controls.left_button)
+			)
 
 			# State Machine
-			# if self.stick.getRawAxis(c.controls.right_trigger) > 0.25:
-			# 	self.intake.run_intake()
-			# 	self.elevator.prepare_to_stack()
-			# else:  # abandon
-			# 	if self.stick.getRawButton(c.controls.offset):
-			# 	self.elevator.tote_offset()
-			# 	if self.stick.getRawButton(1):
-			# 		self.intake.extend_rails()  # rails out
-			#
-			# if self.elevator.state == elevator.States.PICKING_UP or self.stick.getRawButton(c.controls.right_button):
-			# 	self.intake.open()
+			if self.stick.getRawAxis(constants.controls.right_trigger) > 0.25:
+				self.intake.run_intake()
+			elif self.stick.getRawAxis(constants.controls.left_trigger) > 0.25:
+				self.intake.run_intake_backwards()
+				# self.elevator.prepare_to_stack()
+			else:  # abandon
+				pass
+				# if self.stick.getRawButton(constants.controls.offset):
+				# 	self.elevator.tote_offset()
+				# if self.stick.getRawButton(1):
+				# 	self.intake.extend_rails()  # rails out
+
+			if self.elevator._state == elevator._States.PICKING_UP or self.stick.getRawButton(constants.controls.right_button):
+				self.intake.open()
 
 			# DEBUG
 
 			if self.stick.getRawButton(1):
-				self.epos = 0
+				self.epos -= 1
 			if self.stick.getRawButton(2):
-				self.epos = 40
+				self.epos += 1
 
 			self.elevator.set_level(pos=elevator.units.convert(elevator.units.inch, elevator.units.tick, self.epos), force=True)
 
@@ -106,12 +101,14 @@ class Drake(SampleRobot):
 	def update(self):
 		""" Calls the update functions for every component """
 		for component in self.components.values():
-			component.update()
+			# if the component failed somehow, don't run it's update method.
+			if component.enabled:
+				component.update()
 
 	def update_smartdashboard(self):
 		if not self.sd_timer.hasPeriodPassed(0.2):  # we don't need to update every cycle
 			return
-		log.info("Desired pos: %s, Height: %s" % (self.elevator.desired_position, self.elevator.encoder.get()))
+		# log.info("Desired pos: %s, Height: %s" % (self.elevator._desired_position, self.elevator._encoder.get()))
 		# log.info("hall effect: %s" % self.elevator.halleffect.get())
 
 

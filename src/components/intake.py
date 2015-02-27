@@ -5,42 +5,52 @@ from common import constants
 class Intake(object):
 
 	def __init__(self):
+		self.enabled = True
+
 		self._l_motor = Talon(constants.motors.intake_l)
 		self._r_motor = Talon(constants.motors.intake_r)
 		self._intake_piston = Solenoid(0, constants.solenoids.intake)
 		self._outtake_piston = Solenoid(0, constants.solenoids.outtake)
 
-		self._intaking = False
-		self._outtaking = False
+		self._intaking = 0
+		self._rails = False
 		self._open = False
 
 	def update(self):
-		if self._outtaking:
+		if self._rails:
 			self._open = True  # VERY IMPORTANT, stops drawer slides from crashing into intakes.
 			self._outtake_piston.set(True)
 		else:
 			self._outtake_piston.set(False)
 
-		if self._intaking:
-			self._l_motor.set(1)
-			self._r_motor.set(-1)
-		else:
-			self._l_motor.set(0)
-			self._r_motor.set(0)
+		self._l_motor.set(self._intaking)
+		self._r_motor.set(-self._intaking)
 
 		if self._open:
-			self._intake_piston.set(False)
-		else:
 			self._intake_piston.set(True)
+		else:
+			self._intake_piston.set(False)
 
-		self._intaking = False
+		self._intaking = 0
 		self._open = False
 
 	def run_intake(self):
-		self._intaking = True
+		self._intaking = 1
+
+	def run_intake_backwards(self):
+		self._intaking = -1
 
 	def extend_rails(self):
-		self._outtaking = True
+		self._rails = True
 
 	def open(self):
 		self._open = True
+
+	def fail(self):
+		"""
+		Disables EVERYTHING. Only use in case of critical failure/
+		:return:
+		"""
+		self.enabled = False
+		self._l_motor.set(0)
+		self._r_motor.set(0)

@@ -5,6 +5,8 @@ class Pneumatics(object):
 	AMPERAGE_THRESHOLD = 120
 
 	def __init__(self):
+		self.enabled = True
+
 		self.comp = Compressor()
 		self.pdp = PowerDistributionPanel()
 
@@ -17,3 +19,11 @@ class Pneumatics(object):
 			self.comp.stop()
 		else:
 			self.comp.start()
+
+	def fail(self):
+		"""
+		Disables EVERYTHING. Only use in case of critical failure/
+		:return:
+		"""
+		self.enabled = False
+		self.comp.stop()

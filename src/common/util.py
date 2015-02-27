@@ -1,4 +1,7 @@
+import enum
 from math import sin, pi
+import math
+from robotpy_ext.common_drivers import units
 
 
 def deadband(val, dead):
@@ -39,6 +42,13 @@ def wrap_accumulator(acc):
 		acc = 0
 	return acc
 
+
+class AutoNumberEnum(enum.Enum):
+	def __new__(cls):
+		value = len(cls.__members__) + 1
+		obj = object.__new__(cls)
+		obj._value_ = value
+		return obj
 
 # also fix units
 PITCH_DIAMETER = 1.432
