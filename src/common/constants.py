@@ -25,14 +25,15 @@ class _SensorConstants(object):
 	elevator_encoder_b = 1
 	elevator_hall_effect = 2
 	photosensor = 3
+	gyro = 0  # analog!
 
 
-class _PIDConstants(object):
-	kP_elevator_up = 0.0
+class _ElevatorConstants(object):
+	kP_elevator_up = .001
 	kI_elevator_up = 0.0
 	kD_elevator_up = 0.0
 
-	kP_elevator_down = 0.0
+	kP_elevator_down = .001
 	kI_elevator_down = 0.0
 	kD_elevator_down = 0.0
 
@@ -51,7 +52,7 @@ class _ControllerConstants(object):
 	right_button = 6
 
 motors = _MotorConstants()
-pids = _PIDConstants()
+pids = _ElevatorConstants()
 solenoids = _SolenoidConstants()
 sensors = _SensorConstants()
 controls = _ControllerConstants()

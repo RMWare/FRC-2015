@@ -5,8 +5,8 @@ from common import constants
 class Intake(object):
 
 	def __init__(self):
-		self._lmotor = Talon(constants.motors.intake_l)
-		self._rmotor = Talon(constants.motors.intake_r)
+		self._l_motor = Talon(constants.motors.intake_l)
+		self._r_motor = Talon(constants.motors.intake_r)
 		self._intake_piston = Solenoid(0, constants.solenoids.intake)
 		self._outtake_piston = Solenoid(0, constants.solenoids.outtake)
 
@@ -22,11 +22,11 @@ class Intake(object):
 			self._outtake_piston.set(False)
 
 		if self._intaking:
-			self._lmotor.set(1)
-			self._rmotor.set(-1)
+			self._l_motor.set(1)
+			self._r_motor.set(-1)
 		else:
-			self._lmotor.set(0)
-			self._rmotor.set(0)
+			self._l_motor.set(0)
+			self._r_motor.set(0)
 
 		if self._open:
 			self._intake_piston.set(False)

@@ -1,56 +1,43 @@
+import logging
 import math
-from wpilib import Talon
+from wpilib import Talon, Gyro
 from common import util, constants
 from common.syncgroup import SyncGroup
 
 
-class TankDrive(object):
-	def __init__(self):
-		self.l_motor = SyncGroup(Talon, constants.motors.drive_left)
-		self.r_motor = SyncGroup(Talon, constants.motors.drive_right)
-		self.left = 0
-		self.right = 0
-
-	def move(self, left, right):
-		# Applies a bit of exponential scaling to improve control at low speeds
-		self.left = math.copysign(math.pow(left, 2), left)
-		self.right = math.copysign(math.pow(right, 2), right)
-
-	def update(self):
-		self.l_motor.set(-self.left)
-		self.r_motor.set(self.right)
+log = logging.getLogger("drivetrain")
 
 
-class CheesyDrive(object):
-	old_wheel = 0
-	wheel = 0
-	throttle = 0
-	quickturn = False
+class Drive(object):
+	left_pwm = 0
+	right_pwm = 0
+
+	# Cheesy Drive Stuff
 	quickstop_accumulator = 0
-
+	old_wheel = 0
 	throttle_deadband = 0.02
 	wheel_deadband = 0.02
 	sensitivity = .75
+	SETPOINT_TOLERANCE = 5
 
 	def __init__(self):
 		self.l_motor = SyncGroup(Talon, constants.motors.drive_left)
 		self.r_motor = SyncGroup(Talon, constants.motors.drive_right)
+		self.gyro = Gyro(constants.sensors.gyro)
 
-	def move(self, wheel, throttle, quickturn):
+	def reset_gyro(self):
+		self.gyro.reset()
+
+	def cheesy_drive(self, wheel, throttle, quickturn):
 		"""
-			Causes the robot to drive
+			Poofs!
 			:param wheel: The speed that the robot should turn in the X direction. 1 is right [-1.0..1.0]
 			:param throttle: The speed that the robot should drive in the Y direction. -1 is forward. [-1.0..1.0]
 			:param quickturn: If the robot should drive arcade-drive style
 		"""
 
-		self.wheel = util.deadband(-wheel, 0.1)
-		self.throttle = util.deadband(throttle, 0.1)
-		self.quickturn = quickturn
-
-	def update(self):
-		wheel = util.deadband(self.wheel, self.wheel_deadband)
-		throttle = util.deadband(self.throttle, self.throttle_deadband)
+		wheel = util.deadband(wheel, self.wheel_deadband)
+		throttle = util.deadband(throttle, self.throttle_deadband)
 		neg_intertia = wheel - self.old_wheel
 		self.old_wheel = wheel
 		wheel = util.sin_scale(wheel, 0.5, passes=3)
@@ -67,7 +54,7 @@ class CheesyDrive(object):
 
 		wheel += neg_intertia_accumulator
 
-		if self.quickturn:
+		if quickturn:
 			if abs(throttle) < 0.2:
 				alpha = .1
 				self.quickstop_accumulator = (1 - alpha) * self.quickstop_accumulator + alpha * util.limit(wheel, 1.0) * 5
@@ -96,5 +83,32 @@ class CheesyDrive(object):
 			left_pwm += over_power * (-1 - right_pwm)
 			right_pwm = -1
 
-		self.l_motor.set(-left_pwm)
-		self.r_motor.set(right_pwm)
+		self.left_pwm = left_pwm
+		self.right_pwm = right_pwm
+
+	def tank_drive(self, left, right):
+		# Applies a bit of exponential scaling to improve control at low speeds
+		self.left_pwm = math.copysign(math.pow(left, 2), left)
+		self.right_pwm = math.copysign(math.pow(right, 2), right)
+
+	def turn_gyro(self, setpoint):
+		# gyro is continuous
+		result = 0.5 * max(-1, min(1, self.gyro_error(setpoint)))
+		self.left_pwm = result
+		self.right_pwm = -result
+
+	def drive_gyro(self, setpoint, speed):
+		angle = self.gyro_error(setpoint)
+		self.cheesy_drive(angle, speed, False)
+
+	def at_setpoint(self, setpoint):
+		log.info(abs(self.gyro_error(setpoint)))
+		return abs(self.gyro_error(setpoint)) < self.SETPOINT_TOLERANCE
+
+	def gyro_error(self, setpoint):
+		e = setpoint - self.gyro.getAngle()
+		return e - 360 * round(e / 360)
+
+	def update(self):
+		self.l_motor.set(self.left_pwm)
+		self.r_motor.set(-self.right_pwm)

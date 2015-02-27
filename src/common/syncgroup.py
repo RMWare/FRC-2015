@@ -5,6 +5,7 @@ class SyncGroup(object):
 		s = SyncGroup(Talon, [0, 1, 2])
 		s.set(1)
 	"""
+
 	def __init__(self, proxied_class, args_list):
 		"""
 		:param proxied_class: The class to instantiate
@@ -12,7 +13,9 @@ class SyncGroup(object):
 		"""
 		if len(args_list) == 0:
 			raise ValueError("No arguments provided to instantiate the class with, therefore 0 instances created!")
-		object.__setattr__(self, "_items", [proxied_class(*arg) if isinstance(arg, list) else proxied_class(arg) for arg in args_list])
+		object.__setattr__(self, "_items",
+		                   [proxied_class(*arg) if isinstance(arg, list) else proxied_class(arg) for arg in args_list]
+		)
 
 	def __getattribute__(self, item):
 		ret = getattr(object.__getattribute__(self, "_items")[0], item)
@@ -39,4 +42,4 @@ class SyncGroup(object):
 			setattr(pwm, key, value)
 
 	def __repr__(self):
-		return "PWMSyncGroup(%s)" % repr(object.__getattribute__(self, "_items"))
+		return "SyncGroup(%s)" % repr(object.__getattribute__(self, "_items"))

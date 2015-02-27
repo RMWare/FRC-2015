@@ -3,13 +3,7 @@ import math
 from wpilib import DigitalInput, Encoder, Solenoid, Talon
 from common import constants, util
 from common.syncgroup import SyncGroup
-
-PITCH_DIAMETER = 1.432
-TICKS_PER_REVOLUTION = 128
-
-INCHES_PER_TICK = (PITCH_DIAMETER * math.pi) / TICKS_PER_REVOLUTION
-
-TOTE_HEIGHT = 12.1 * INCHES_PER_TICK
+from robotpy_ext.common_drivers import units
 
 
 class States(Enum):
@@ -21,34 +15,34 @@ class States(Enum):
 
 
 class Elevator(object):
-	pid_tolerance = 32
+	pid_tolerance = units.convert(units.inch, units.tick, 1/16)
+	MAX_VALUE = 26519
+	MIN_VALUE = units.convert(units.inch, units.tick, 1/8)
 
 	def __init__(self):
 		self.motor = SyncGroup(Talon, constants.motors.elevator_motor)
 		self.brake = Solenoid(constants.solenoids.disc_brake)
-		self.encoder = Encoder(constants.sensors.elevator_encoder_a, constants.sensors.elevator_encoder_b)
+		self.encoder = Encoder(constants.sensors.elevator_encoder_a, constants.sensors.elevator_encoder_b, True)
 		self.halleffect = DigitalInput(constants.sensors.elevator_hall_effect)
 		self.photosensor = DigitalInput(constants.sensors.photosensor)
 
 		self.prev_error = 0
 		self.integral = 0
 		self.desired_position = 0
-		
+
 		self.override_level = -1
 		self.old_pos = 0
 		self.offset = False
-		
-		self.state = States.BRAKED
-		self.set_level(1)
+
+		self.state = States.ZEROING
 
 		self.rails_extended = False
 
 	def update(self):
-			
 		if self.state in [States.MOVING, States.PICKING_UP]:
 			current_position = self.encoder.getDistance()
 			curr_error = self.desired_position - current_position
-			
+
 			if abs(curr_error) < self.pid_tolerance:  # at setpoint
 				if self.state == States.WAITING:
 					if self.photosensor.get():  # tote is in robot!
@@ -93,48 +87,55 @@ class Elevator(object):
 				self.prev_error = curr_error
 
 		if self.state == States.ZEROING:
-			if self.encoder.getDistance() < (3 * (1/INCHES_PER_TICK)):
-				self.motor.set(-.2)
+			# goes up until the hall effect sensor goes off.
+			if self.encoder.getDistance() < units.convert(units.inch, units.tick, 3):
+				self.motor.set(.1)
 				if self.encoder.getDistance() < 0:
 					self.reset_encoder()
+			else:
+				raise RuntimeError(
+					"While trying to zero, the elevator went up more than 3 inches without triggering the hall effect sensor.")
 			if self.halleffect.get():
 				self.reset_encoder()
 				self.state = States.BRAKED
-				
+
 		if self.state == States.BRAKED:
 			self.motor.set(0)
 			self.brake.set(True)
-		
+
 		self.offset = 0
 
-	def set_level(self, level=-1, pos=-1, force=False):  # translates levels 0-6 into encoder value
-		if not self.override_level == -1 and not force:
+	def set_level(self, level=None, pos=None, force=False):  # translates levels 0-6 into encoder value
+		if self.override_level is not None and not force:
 			return
-		
-		if level == -1 and pos == -1:
+
+		if level is None and pos is None:
 			raise ValueError("set_level was passed neither a level or a position. You must pass one")
-		elif not level == -1 and not pos == -1:
+		elif level is not None and pos is not None:
 			raise ValueError("set_level was passed a level and a position. Please only use one.")
-		
-		if pos == -1:
-			pos = level * TOTE_HEIGHT * INCHES_PER_TICK
-		
+
+		if pos is None:
+			pos = min(max(self.MIN_VALUE, units.convert(units.tote, units.tick, level)), self.MAX_VALUE)
+
+		if pos < 0:
+			raise ValueError("can't set position to a value below 0.")
+
 		if not self.desired_position == pos:
 			self.state = States.MOVING
 			self.desired_position = pos
-			self.ramp_position = 0
 			self.integral = 0
-			
+
 	def set_override_level(self, level):
 		self.set_level(level, force=True)
 		self.override_level = level
 
 	def reset_encoder(self):
+		self.encoder.reset()
 		self.prev_error = 0
 		self.integral = 0
-	
+
 	def tote_offset(self):
-		self.offset = -TOTE_HEIGHT/2
+		self.offset = -TOTE_HEIGHT / 2
 
 	def zero(self):
 		if self.state == States.BRAKED:
