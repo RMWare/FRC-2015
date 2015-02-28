@@ -1,12 +1,12 @@
 from wpilib import Compressor, PowerDistributionPanel
+from . import Component
 
 
-class Pneumatics(object):
+class Pneumatics(Component):
 	AMPERAGE_THRESHOLD = 120
 
 	def __init__(self):
-		self.enabled = True
-
+		super().__init__()
 		self.comp = Compressor()
 		self.pdp = PowerDistributionPanel()
 

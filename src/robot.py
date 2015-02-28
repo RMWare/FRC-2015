@@ -111,6 +111,9 @@ class Drake(SampleRobot):
 		# log.info("Desired pos: %s, Height: %s" % (self.elevator._desired_position, self.elevator._encoder.get()))
 		# log.info("hall effect: %s" % self.elevator.halleffect.get())
 
+		if self.elevator._state == elevator._States.ZEROING:
+			SmartDashboard.putBoolean("ready_to_zero", not self.elevator._halleffect.get())
+
 
 if __name__ == "__main__":
 	run(Drake)

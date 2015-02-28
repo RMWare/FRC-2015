@@ -1,17 +1,17 @@
 from wpilib import Solenoid, Talon
 from common import constants
+from . import Component
 
 
-class Intake(object):
+class Intake(Component):
 
 	def __init__(self):
-		self.enabled = True
+		super().__init__()
 
 		self._l_motor = Talon(constants.motors.intake_l)
 		self._r_motor = Talon(constants.motors.intake_r)
 		self._intake_piston = Solenoid(0, constants.solenoids.intake)
 		self._outtake_piston = Solenoid(0, constants.solenoids.outtake)
-
 		self._intaking = 0
 		self._rails = False
 		self._open = False

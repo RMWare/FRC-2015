@@ -27,7 +27,7 @@ class _SensorConstants(object):
 	gyro = 0  # analog!
 
 
-class _ElevatorConstants(object):
+class _TunableConstants(object):
 	kP_elevator_up = .001
 	kI_elevator_up = 0.0
 	kD_elevator_up = 0.0
@@ -51,7 +51,7 @@ class _ControllerConstants(object):
 	right_button = 6
 
 motors = _MotorConstants()
-pids = _ElevatorConstants()
+pids = _TunableConstants()
 solenoids = _SolenoidConstants()
 sensors = _SensorConstants()
 controls = _ControllerConstants()
