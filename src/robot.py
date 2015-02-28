@@ -22,7 +22,7 @@ class Drake(SampleRobot):
 		self.stick = Joystick(0)
 		self.epos = 0
 
-		log.info("Initializing Subsystems")
+		log.info("Initializing components")
 
 		self.drive = drive.Drive()
 		self.pneumatics = pneumatics.Pneumatics()

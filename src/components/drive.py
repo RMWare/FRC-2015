@@ -3,12 +3,13 @@ import math
 from wpilib import Talon, Gyro
 from common import util, constants
 from common.syncgroup import SyncGroup
+from . import Component
 
 
 log = logging.getLogger("drivetrain")
 
 
-class Drive(object):
+class Drive(Component):
 	left_pwm = 0
 	right_pwm = 0
 
@@ -21,7 +22,7 @@ class Drive(object):
 	SETPOINT_TOLERANCE = 5
 
 	def __init__(self):
-		self.enabled = True
+		super().__init__()
 
 		self.l_motor = SyncGroup(Talon, constants.motors.drive_left)
 		self.r_motor = SyncGroup(Talon, constants.motors.drive_right)

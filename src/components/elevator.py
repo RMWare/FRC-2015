@@ -4,6 +4,7 @@ from common import constants, util
 from common.syncgroup import SyncGroup
 from robotpy_ext.common_drivers import units
 from common.util import AutoNumberEnum
+from . import Component
 
 log = logging.getLogger("elevator")
 
@@ -15,42 +16,30 @@ class _States(AutoNumberEnum):
 	ZEROING = ()
 
 
-class Elevator(object):
+class Elevator(Component):
 	pid_tolerance = units.convert(units.inch, units.tick, 1/16)
 	MAX_VALUE = 26750
 	MIN_VALUE = units.convert(units.inch, units.tick, 1/8)
 
 	def __init__(self):
-		self.enabled = True
-
+		super().__init__()
 		self._motor = SyncGroup(Talon, constants.motors.elevator_motor)
 		self._encoder = Encoder(constants.sensors.elevator_encoder_a, constants.sensors.elevator_encoder_b, True)
 		self._halleffect = DigitalInput(constants.sensors.elevator_hall_effect)
 		self._photosensor = DigitalInput(constants.sensors.photosensor)
-
 		self._curr_error = 0
 		self._prev_error = 0
 		self._integral = 0
 		self._desired_position = 0
-
 		self._override_level = -1
 		self._old_pos = 0
 		self._offset = False
-
 		self._state = _States.ZEROING
-
-		self._rails_extended = False
-
-		# Safety check!
-		# if self._halleffect.get():  # if we're not at the very bottom of our lift at the start of the match
-		# 	log.error("Elevator was not zeroed, disabling elevator.")
-		# 	self.fail()
 
 	def update(self):
 		self._curr_error = self._desired_position - self._encoder.getDistance()
 
 		if self._state in [_States.TRACKING, _States.PICKING_UP]:
-
 			if self.at_setpoint():  # at setpoint
 				if self._state == _States.WAITING:
 					if self._photosensor.get():  # tote is in robot!
