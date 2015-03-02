@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from enum import Enum
-from wpilib import SampleRobot, Joystick, Timer, SmartDashboard, LiveWindow, run
+from common.xbox import XboxController
+from wpilib import SampleRobot, Timer, SmartDashboard, LiveWindow, run
 
 from components import drive, intake, pneumatics, elevator
 from common import delay, util, constants
@@ -19,8 +19,9 @@ class Drake(SampleRobot):
 	# noinspection PyAttributeOutsideInit
 	# robotInit is called straight from __init__
 	def robotInit(self):
-		self.stick = Joystick(0)
-		self.epos = 0
+		self.xbox = XboxController(0)
+
+		constants.init_smartdashboard()
 
 		log.info("Initializing components")
 
@@ -59,35 +60,36 @@ class Drake(SampleRobot):
 
 		while self.isOperatorControl() and self.isEnabled():
 			# Driving
-			self.drive.cheesy_drive(self.stick.getRawAxis(constants.controls.right_x),
-			                        -self.stick.getRawAxis(constants.controls.left_y),
-			                        self.stick.getRawButton(constants.controls.left_button)
+			self.drive.cheesy_drive(self.xbox.right_x(),
+			                        -self.xbox.left_y(),
+			                        self.xbox.left_bumper()
 			)
 
-			# State Machine
-			if self.stick.getRawAxis(constants.controls.right_trigger) > 0.25:
-				self.intake.run_intake()
-			elif self.stick.getRawAxis(constants.controls.left_trigger) > 0.25:
+			# the main thinger
+			if self.xbox.right_trigger():
+				self.xbox.rumble(right=0.25)
+				self.elevator.prepare_to_stack()
+				if not self.elevator.has_tote():
+					self.intake.run_intake()
+
+			elif self.xbox.left_trigger():
+				self.xbox.rumble(left=0.25)
 				self.intake.run_intake_backwards()
-				# self.elevator.prepare_to_stack()
+
 			else:  # abandon
-				pass
+				self.xbox.rumble(0, 0)
+				self.elevator.set(level=1)
 				# if self.stick.getRawButton(constants.controls.offset):
 				# 	self.elevator.tote_offset()
 				# if self.stick.getRawButton(1):
 				# 	self.intake.extend_rails()  # rails out
 
-			if self.elevator._state == elevator._States.PICKING_UP or self.stick.getRawButton(constants.controls.right_button):
+			if (self.elevator.state == elevator.States.TRACKING_TO_PICKUP) or self.xbox.right_bumper():
 				self.intake.open()
 
-			# DEBUG
-
-			if self.stick.getRawButton(1):
-				self.epos -= 1
-			if self.stick.getRawButton(2):
-				self.epos += 1
-
-			self.elevator.set_level(pos=elevator.units.convert(elevator.units.inch, elevator.units.tick, self.epos), force=True)
+			if self.xbox.start():
+				self.elevator.state = elevator.States.ZEROING
+				self.elevator.enabled = True
 
 			self.update_smartdashboard()
 			self.update()
@@ -108,16 +110,11 @@ class Drake(SampleRobot):
 	def update_smartdashboard(self):
 		if not self.sd_timer.hasPeriodPassed(0.2):  # we don't need to update every cycle
 			return
-		# log.info("Desired pos: %s, Height: %s" % (self.elevator._desired_position, self.elevator._encoder.get()))
-		# log.info("hall effect: %s" % self.elevator.halleffect.get())
+		for component in self.components.values():
+			component.update_smartdashboard()
 
-		if self.elevator._state == elevator._States.ZEROING:
-			SmartDashboard.putBoolean("ready_to_zero", not self.elevator._halleffect.get())
+		constants.update_smartdashboard()
 
 
 if __name__ == "__main__":
 	run(Drake)
-
-	# TODO TUNE PID LOOPS AND MAKE suRE IT WORKS ELEVATOOR
-	# TODO abstract methods to run elevator "intake" method at arbitrary levels
-	# TODO keep PID loop on when braked

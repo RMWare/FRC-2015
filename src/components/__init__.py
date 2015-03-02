@@ -5,5 +5,8 @@ class Component(object):
 	def update(self):
 		raise NotImplementedError("Component must have an update method")
 
+	def update_smartdashboard(self):
+		pass
+
 	def fail(self):
 		raise NotImplementedError("Component must have a fail method")

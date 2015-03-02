@@ -24,7 +24,7 @@ class DriveStraight(StatefulAutonomous):
 	def turn(self):
 		# repeat until we're there
 		self.drive.turn_gyro(90)
-		if self.drive.at_setpoint(90):
+		if False: #self.drive.at_setpoint(90):
 			self.next_state('stop')
 		else:
 			self.next_state('turn')

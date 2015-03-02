@@ -18,7 +18,7 @@ class Drive(Component):
 	old_wheel = 0
 	throttle_deadband = 0.02
 	wheel_deadband = 0.02
-	sensitivity = .75
+	sensitivity = 1.5
 	SETPOINT_TOLERANCE = 5
 
 	def __init__(self):
@@ -43,7 +43,7 @@ class Drive(Component):
 		throttle = util.deadband(throttle, self.throttle_deadband)
 		neg_intertia = wheel - self.old_wheel
 		self.old_wheel = wheel
-		wheel = util.sin_scale(wheel, 0.5, passes=3)
+		wheel = util.sin_scale(wheel, 0.8, passes=3)
 
 		if wheel * neg_intertia > 0:
 			neg_intertia_scalar = 2.5
@@ -96,7 +96,7 @@ class Drive(Component):
 
 	def turn_gyro(self, setpoint):
 		# gyro is continuous
-		result = 0.5 * max(-1, min(1, self.gyro_error(setpoint)))
+		result = 0.6 * max(-1, min(1, self.gyro_error(setpoint)))
 		self.left_pwm = result
 		self.right_pwm = -result
 

@@ -1,4 +1,5 @@
 # This file is named misleadingly, lol
+from wpilib import SmartDashboard
 
 
 class _MotorConstants(object):  # all pins should be different
@@ -28,30 +29,26 @@ class _SensorConstants(object):
 
 
 class _TunableConstants(object):
-	kP_elevator_up = .001
-	kI_elevator_up = 0.0
-	kD_elevator_up = 0.0
+	def __init__(self):
+		self.kP_elevator_up = .001
+		self.kI_elevator_up = .0003
+		self.kD_elevator_up = .001
 
-	kP_elevator_down = .001
-	kI_elevator_down = 0.0
-	kD_elevator_down = 0.0
-
-
-class _ControllerConstants(object):
-	left_x = 0
-	left_y = 1
-
-	left_trigger = 2
-	right_trigger = 3
-
-	right_x = 4
-	right_y = 5
-
-	left_button = 5
-	right_button = 6
+		self.kP_elevator_down = .001
+		self.kI_elevator_down = .0003
+		self.kD_elevator_down = .001
 
 motors = _MotorConstants()
 pids = _TunableConstants()
 solenoids = _SolenoidConstants()
 sensors = _SensorConstants()
-controls = _ControllerConstants()
+
+
+def init_smartdashboard():
+	for k, v in pids.__dict__.items():
+		SmartDashboard.putNumber(k, v * 100)
+
+
+def update_smartdashboard():
+	for k, v in pids.__dict__.items():
+		setattr(pids, k, SmartDashboard.getNumber(k, v) / 100)
