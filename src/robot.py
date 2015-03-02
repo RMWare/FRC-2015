@@ -109,7 +109,7 @@ class Drake(SampleRobot):
 					component.enabled = False
 					component.stop()
 					if self.ds.isFMSAttached():
-						log.error("In subsystem %s: %s" % (component, e.with_traceback()))
+						log.error("In subsystem %s: %s" % (component, e))
 						# fail silently
 					else:
 						raise e
