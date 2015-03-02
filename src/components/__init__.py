@@ -3,10 +3,10 @@ class Component(object):
 		self.enabled = True
 
 	def update(self):
-		raise NotImplementedError("Component must have an update method")
+		raise NotImplementedError("Component must have an 'update' method")
 
 	def update_smartdashboard(self):
 		pass
 
-	def fail(self):
-		raise NotImplementedError("Component must have a fail method")
+	def stop(self):
+		raise NotImplementedError("Component must have a 'stop' method")

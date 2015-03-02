@@ -46,11 +46,7 @@ class Intake(Component):
 	def open(self):
 		self._open = True
 
-	def fail(self):
-		"""
-		Disables EVERYTHING. Only use in case of critical failure/
-		:return:
-		"""
-		self.enabled = False
+	def stop(self):
+		"""Disables EVERYTHING. Only use in case of critical failure"""
 		self._l_motor.set(0)
 		self._r_motor.set(0)

@@ -28,6 +28,15 @@ class Drive(Component):
 		self.r_motor = SyncGroup(Talon, constants.motors.drive_right)
 		self.gyro = Gyro(constants.sensors.gyro)
 
+	def update(self):
+		self.l_motor.set(self.left_pwm)
+		self.r_motor.set(-self.right_pwm)
+
+	def stop(self):
+		"""Disables EVERYTHING. Only use in case of critical failure."""
+		self.l_motor.set(0)
+		self.r_motor.set(0)
+
 	def reset_gyro(self):
 		self.gyro.reset()
 
@@ -111,16 +120,3 @@ class Drive(Component):
 	def gyro_error(self, setpoint):
 		e = setpoint - self.gyro.getAngle()
 		return e - 360 * round(e / 360)
-
-	def update(self):
-		self.l_motor.set(self.left_pwm)
-		self.r_motor.set(-self.right_pwm)
-
-	def fail(self):
-		"""
-		Disables EVERYTHING. Only use in case of critical failure/
-		:return:
-		"""
-		self.enabled = False
-		self.l_motor.set(0)
-		self.r_motor.set(0)

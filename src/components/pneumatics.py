@@ -20,10 +20,6 @@ class Pneumatics(Component):
 		else:
 			self.comp.start()
 
-	def fail(self):
-		"""
-		Disables EVERYTHING. Only use in case of critical failure/
-		:return:
-		"""
-		self.enabled = False
+	def stop(self):
+		"""Disables EVERYTHING. Only use in case of critical failure"""
 		self.comp.stop()

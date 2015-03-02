@@ -7,14 +7,13 @@ from components import Component
 def test_components(control, fake_time, robot):
 	robot.robotInit()
 	for component in robot.components.values():
-		try:
-			assert type(component).__bases__[0] is Component
-		except AssertionError:
-			raise AssertionError("%s is not a Component" % component)
+		assert type(component).__bases__[0] is Component
 
 
 def test_failure(control, fake_time, robot):
 	robot.robotInit()
 	for component in robot.components.values():
-		component.fail()
-		assert component.enabled is False
+		component.enabled = False
+		component.stop()
+
+	#assert robot.  # TODO assert that all PWM outputs are set to 0

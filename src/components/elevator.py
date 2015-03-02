@@ -18,7 +18,7 @@ class States(AutoNumberEnum):
 
 
 class Elevator(Component):
-	pid_tolerance = units.convert(units.inch, units.tick, 1/16)
+	pid_tolerance = units.convert(units.inch, units.tick, 1/8)
 	MAX_VALUE = 26750
 	MIN_VALUE = units.convert(units.inch, units.tick, 1/8)
 
@@ -38,12 +38,13 @@ class Elevator(Component):
 		self._offset = False
 		self.state = States.ZEROING
 
-	def update(self):
+	def stop(self):
+		self._motor.set(0)
 
-		if self._halleffect.get():  # safety check.
-			if self.first_tick:
-				self.fail()
-				return
+	def update(self):
+		if self.first_tick:
+			if self._halleffect.get():  # safety check.
+				raise RuntimeError("Elevator was not at zero position when enabled!!!")
 
 		self._curr_error = self._desired_position - self._encoder.getDistance()
 
@@ -63,30 +64,31 @@ class Elevator(Component):
 				self.set(pos=self._old_pos)
 				return
 
-		else:
-			derivative = self._curr_error - self._prev_error
-			self._integral += self._curr_error
+		derivative = (self._curr_error - self._prev_error) / constants.general.control_loop_wait_time
 
-			if self._curr_error > 0:
-				kP = constants.pids.kP_elevator_up
-				kI = constants.pids.kI_elevator_up
-				kD = constants.pids.kD_elevator_up
-			elif self._curr_error < 0:
-				kP = constants.pids.kP_elevator_down
-				kI = constants.pids.kI_elevator_down
-				kD = constants.pids.kD_elevator_down
-			else:
-				kP, kI, kD = 0, 0, 0
+		self._integral = util.limit(self._integral + self._curr_error * constants.general.control_loop_wait_time,
+		                            constants.tunable.kI_limit)
+
+		# if self._curr_error > 0:
+		# 	kP = constants.pids.kP_elevator_up
+		# 	kI = constants.pids.kI_elevator_up
+		# 	kD = constants.pids.kD_elevator_up
+		# elif self._curr_error < 0:
+		# 	kP = constants.pids.kP_elevator_down
+		# 	kI = constants.pids.kI_elevator_down
+		# 	kD = constants.pids.kD_elevator_down
+		# else:
+		kP, kI, kD = constants.tunable.kP, constants.tunable.kI, constants.tunable.kD
 
 
-			vP = kP * self._curr_error
-			vI = kI * self._integral
-			vD = kD * derivative
+		vP = kP * self._curr_error
+		vI = kI * self._integral
+		vD = kD * derivative
 
-			power = util.limit(vP + vI + vD, lim=0.85)
+		power = util.limit(vP + vI + vD)
 
-			self._motor.set(power)
-			self._prev_error = self._curr_error
+		self._motor.set(power)
+		self._prev_error = self._curr_error
 
 		if self.state == States.ZEROING:
 			# goes up until the hall effect sensor goes off.
@@ -151,15 +153,7 @@ class Elevator(Component):
 		SmartDashboard.putBoolean("Elevator at Setpoint", self.at_setpoint())
 
 		SmartDashboard.putNumber("Elevator Integral", self._integral)
+		SmartDashboard.putNumber("Elevator Error", self._curr_error)
 
 		if self.state == States.ZEROING:
 			SmartDashboard.putBoolean("ready_to_zero", not self._halleffect.get())
-
-	def fail(self):
-		"""
-		Disables EVERYTHING. Only use in case of critical failure/
-		:return:
-		"""
-		log.error("Elevator was not zeroed, disabling.")
-		self.enabled = False
-		self._motor.set(0)

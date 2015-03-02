@@ -39,14 +39,13 @@ class Drake(SampleRobot):
 
 		self.sd_timer = Timer()  # timer for SmartDashboard update so we don't use all our bandwidth
 		self.sd_timer.start()
-		self.control_loop_wait_time = 0.025
 		self.automodes = AutonomousModeSelector('autonomous', self.components)
 		log.info("Ready!")
 
 	def autonomous(self):
 		SmartDashboard.putNumber('RobotMode', MODE_AUTONOMOUS)
-		self.automodes.run(self.control_loop_wait_time, iter_fn=self.update)
-		Timer.delay(self.control_loop_wait_time)
+		self.automodes.run(constants.general.control_loop_wait_time, iter_fn=self.update)
+		Timer.delay(constants.general.control_loop_wait_time)
 
 	def disabled(self):
 		SmartDashboard.putNumber('RobotMode', MODE_DISABLED)
@@ -56,7 +55,7 @@ class Drake(SampleRobot):
 
 	def operatorControl(self):
 		SmartDashboard.putNumber('RobotMode', MODE_TELEOPERATED)
-		precise_delay = delay.PreciseDelay(self.control_loop_wait_time)
+		precise_delay = delay.PreciseDelay(constants.general.control_loop_wait_time)
 
 		while self.isOperatorControl() and self.isEnabled():
 			# Driving
@@ -103,9 +102,17 @@ class Drake(SampleRobot):
 	def update(self):
 		""" Calls the update functions for every component """
 		for component in self.components.values():
-			# if the component failed somehow, don't run it's update method.
 			if component.enabled:
-				component.update()
+				try:
+					component.update()
+				except Exception as e:
+					component.enabled = False
+					component.stop()
+					if self.ds.isFMSAttached():
+						log.error("In subsystem %s: %s" % (component, e.with_traceback()))
+						# fail silently
+					else:
+						raise e
 
 	def update_smartdashboard(self):
 		if not self.sd_timer.hasPeriodPassed(0.2):  # we don't need to update every cycle
