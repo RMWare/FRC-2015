@@ -85,7 +85,7 @@ class Elevator(Component):
 		vI = kI * self._integral
 		vD = kD * derivative
 
-		power = util.limit(vP + vI + vD)
+		power = util.limit(vP + vI + vD, constants.tunable.power_limit)
 
 		self._motor.set(power)
 		self._prev_error = self._curr_error
@@ -95,6 +95,7 @@ class Elevator(Component):
 			if self._encoder.getDistance() < units.convert(units.inch, units.tick, 3):
 				self._motor.set(.1)
 				if self._encoder.getDistance() < 0:
+
 					self.reset_encoder()
 			else:
 				raise RuntimeError(

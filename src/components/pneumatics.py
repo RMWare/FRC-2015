@@ -1,4 +1,4 @@
-from wpilib import Compressor, PowerDistributionPanel
+from wpilib import Compressor, PowerDistributionPanel, SmartDashboard
 from . import Component
 
 
@@ -23,3 +23,6 @@ class Pneumatics(Component):
 	def stop(self):
 		"""Disables EVERYTHING. Only use in case of critical failure"""
 		self.comp.stop()
+
+	def update_smartdashboard(self):
+		SmartDashboard.putNumber("Amp draw", self.pdp.getTotalCurrent())

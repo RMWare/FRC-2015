@@ -30,19 +30,13 @@ class _SensorConstants(object):
 
 class _TunableConstants(object):
 	def __init__(self):
-		self.kP_elevator_up = .001
-		self.kI_elevator_up = .0003
-		self.kD_elevator_up = .001
-
-		self.kP_elevator_down = .001
-		self.kI_elevator_down = .0003
-		self.kD_elevator_down = .001
-
-		self.kP = .0009
+		self.kP = .00090
 		self.kI = .00350
 		self.kD = .00002
 
 		self.kI_limit = 30
+
+		self.power_limit = 0.6
 
 
 class _GeneralConstants(object):
@@ -52,15 +46,16 @@ class _GeneralConstants(object):
 motors = _MotorConstants()
 tunable = _TunableConstants()
 solenoids = _SolenoidConstants()
+
 sensors = _SensorConstants()
 general = _GeneralConstants()
 
 
 def init_smartdashboard():
 	for k, v in tunable.__dict__.items():
-		SmartDashboard.putNumber(k, v * 100)
+		SmartDashboard.putNumber(k, v)
 
 
 def update_smartdashboard():
 	for k, v in tunable.__dict__.items():
-		setattr(tunable, k, SmartDashboard.getNumber(k, v) / 100)
+		setattr(tunable, k, SmartDashboard.getNumber(k, v))
