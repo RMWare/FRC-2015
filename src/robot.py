@@ -118,4 +118,4 @@ class Drake(SampleRobot):
 
 
 if __name__ == "__main__":
-	run(Drake, physics_enabled=True)
+	run(Drake)
