@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from common.xbox import XboxController
+from robotpy_ext.common_drivers import units
 from wpilib import SampleRobot, Timer, SmartDashboard, LiveWindow, run
 
 from components import drive, intake, pneumatics, elevator
@@ -8,7 +9,6 @@ from robotpy_ext.autonomous import AutonomousModeSelector
 import logging
 
 log = logging.getLogger("robot")
-
 # to stay in sync with our driver station
 MODE_DISABLED = 0
 MODE_AUTONOMOUS = 1
@@ -58,6 +58,7 @@ class Drake(SampleRobot):
 		precise_delay = delay.PreciseDelay(constants.general.control_loop_wait_time)
 
 		while self.isOperatorControl() and self.isEnabled():
+
 			# Driving
 			self.drive.cheesy_drive(self.xbox.right_x(),
 			                        -self.xbox.left_y(),
@@ -67,29 +68,22 @@ class Drake(SampleRobot):
 			# the main thinger
 			if self.xbox.right_trigger():
 				self.xbox.rumble(right=0.25)
-				self.elevator.prepare_to_stack()
+				self.elevator.intaking = True
 				if not self.elevator.has_tote():
 					self.intake.run_intake()
+			else:
+				self.elevator.intaking = False
 
-			elif self.xbox.left_trigger():
+			if self.xbox.left_trigger():
 				self.xbox.rumble(left=0.25)
 				self.intake.run_intake_backwards()
 
 			else:  # abandon
 				self.xbox.rumble(0, 0)
-				self.elevator.set(level=1)
-				# if self.stick.getRawButton(constants.controls.offset):
-				# 	self.elevator.tote_offset()
-				# if self.stick.getRawButton(1):
-				# 	self.intake.extend_rails()  # rails out
 
-			if (self.elevator.state == elevator.States.TRACKING_TO_PICKUP) or self.xbox.right_bumper():
+			if (self.elevator.position() < units.convert(units.tick, units.tote, 1) and self.elevator.at_setpoint()) \
+					or self.xbox.right_bumper():
 				self.intake.open()
-
-			if self.xbox.start():
-				self.elevator.state = elevator.States.ZEROING
-				self.elevator.enabled = True
-
 			self.update_smartdashboard()
 			self.update()
 
@@ -124,4 +118,4 @@ class Drake(SampleRobot):
 
 
 if __name__ == "__main__":
-	run(Drake)
+	run(Drake, physics_enabled=True)

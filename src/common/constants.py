@@ -36,7 +36,13 @@ class _TunableConstants(object):
 
 		self.kI_limit = 30
 
-		self.power_limit = 0.6
+		self.up_power_limit = 0.6
+		self.down_power_limit = 0.4
+
+		self.elevator_offset = 0
+		self.neutral_position = 0
+
+
 
 
 class _GeneralConstants(object):
@@ -53,9 +59,9 @@ general = _GeneralConstants()
 
 def init_smartdashboard():
 	for k, v in tunable.__dict__.items():
-		SmartDashboard.putNumber(k, v)
+		SmartDashboard.putNumber("tunable: %s" % k, v)
 
 
 def update_smartdashboard():
 	for k, v in tunable.__dict__.items():
-		setattr(tunable, k, SmartDashboard.getNumber(k, v))
+		setattr(tunable, k, SmartDashboard.getNumber("tunable: %s" % k, v))

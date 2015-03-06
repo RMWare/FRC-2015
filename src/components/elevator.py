@@ -1,160 +1,123 @@
 import logging
 from wpilib import DigitalInput, Encoder, Talon, SmartDashboard
-from common import constants, util
+from common import constants
 from common.syncgroup import SyncGroup
 from robotpy_ext.common_drivers import units
-from common.util import AutoNumberEnum
+from common.util import limit, AutoNumberEnum
 from . import Component
 
 log = logging.getLogger("elevator")
 
-
-class States(AutoNumberEnum):
-	TRACKING = ()
-	TRACKING_TO_WAIT = ()
-	WAITING = ()
-	TRACKING_TO_PICKUP = ()
-	ZEROING = ()
+MAX_POS = 26750
+MIN_POS = units.convert(units.inch, units.tick, 1 / 8)
+PID_TOLERANCE = units.convert(units.inch, units.tick, 1 / 8)
 
 
 class Elevator(Component):
-	pid_tolerance = units.convert(units.inch, units.tick, 1/8)
-	MAX_VALUE = 26750
-	MIN_VALUE = units.convert(units.inch, units.tick, 1/8)
 
 	def __init__(self):
 		super().__init__()
-		self.first_tick = True
 		self._motor = SyncGroup(Talon, constants.motors.elevator_motor)
 		self._encoder = Encoder(constants.sensors.elevator_encoder_a, constants.sensors.elevator_encoder_b, True)
 		self._halleffect = DigitalInput(constants.sensors.elevator_hall_effect)
 		self._photosensor = DigitalInput(constants.sensors.photosensor)
-		self._curr_error = 0
+
+		# for I & D
 		self._prev_error = 0
 		self._integral = 0
-		self._desired_position = 0
-		self._override_level = None
-		self._old_pos = 0
-		self._offset = False
-		self.state = States.ZEROING
+
+		# for moving
+		self.desired_position = 0
+		self.stack_offset = 0
+
+		self.zeroed = False
+		self.ready_to_zero = False
+		self.intaking = False
 
 	def stop(self):
 		self._motor.set(0)
 
 	def update(self):
-		if self.first_tick:
-			if self._halleffect.get():  # safety check.
-				raise RuntimeError("Elevator was not at zero position when enabled!!!")
-
-		self._curr_error = self._desired_position - self._encoder.getDistance()
-
-		if self.at_setpoint():  # at setpoint
-			if self.state == States.TRACKING_TO_WAIT:
-				self.state = States.WAITING
-				return
-
-			if self.state == States.WAITING:
-				if self.has_tote():  # tote is in robot!
-					self._old_pos = self._desired_position
-					self.set(pos=0, forced=True)
-					self.state = States.TRACKING_TO_PICKUP
-					return
-
-			if self.state == States.TRACKING_TO_PICKUP:  # go back to old pos
-				self.set(pos=self._old_pos)
-				return
-
-		derivative = (self._curr_error - self._prev_error) / constants.general.control_loop_wait_time
-
-		self._integral = util.limit(self._integral + self._curr_error * constants.general.control_loop_wait_time,
-		                            constants.tunable.kI_limit)
-
-		# if self._curr_error > 0:
-		# 	kP = constants.pids.kP_elevator_up
-		# 	kI = constants.pids.kI_elevator_up
-		# 	kD = constants.pids.kD_elevator_up
-		# elif self._curr_error < 0:
-		# 	kP = constants.pids.kP_elevator_down
-		# 	kI = constants.pids.kI_elevator_down
-		# 	kD = constants.pids.kD_elevator_down
-		# else:
-		kP, kI, kD = constants.tunable.kP, constants.tunable.kI, constants.tunable.kD
-
-
-		vP = kP * self._curr_error
-		vI = kI * self._integral
-		vD = kD * derivative
-
-		power = util.limit(vP + vI + vD, constants.tunable.power_limit)
-
-		self._motor.set(power)
-		self._prev_error = self._curr_error
-
-		if self.state == States.ZEROING:
-			# goes up until the hall effect sensor goes off.
-			if self._encoder.getDistance() < units.convert(units.inch, units.tick, 3):
+		if not True:#self.zeroed:
+			# goes up until the elevator is raised off the hall effect.
+			if self.ready_to_zero:
 				self._motor.set(.1)
-				if self._encoder.getDistance() < 0:
-
+				if self._halleffect.get():
 					self.reset_encoder()
+					self.zeroed = True
+
+			elif not self._halleffect.get():  # wait till we get into the hall effect first
+				self.ready_to_zero = True
+				self._motor.set(-.1)
+
+		else:
+			if self.intaking:
+				if self.at_setpoint():
+					if self.has_tote():
+						self.set(constants.tunable.elevator_offset + units.convert(units.tote, units.tick, self.stack_offset))  # go under tote and grab
+					else:
+						self.set(constants.tunable.elevator_offset + units.convert(units.tote, units.tick, self.stack_offset + 1))  # go back up with tote
 			else:
-				raise RuntimeError(
-					"While trying to zero, the elevator went up more than 3 inches without triggering the hall effect sensor.")
-			if self._halleffect.get():
-				self.reset_encoder()
-				self.state = States.TRACKING
-		self.first_tick = False
-		self._offset = 0
+				self.set(constants.tunable.neutral_position)
 
-	def set(self, level=None, pos=None, forced=False):  # translates levels 0-6 into encoder value
-		if (self._override_level is not None and not forced) or self.state == States.ZEROING:
-			return
+			self.do_pid()
 
-		if level is None and pos is None:
-			raise ValueError("set_level was passed neither a level or a position. You must pass one")
-		elif level is not None and pos is not None:
-			raise ValueError("set_level was passed a level and a position. Please only use one.")
-
-		if pos is None:
-			pos = units.convert(units.tote, units.tick, level)
-
-		if not self._desired_position == round(pos):
-			self.state = States.TRACKING
-			self._desired_position = min(max(self.MIN_VALUE, round(pos)), self.MAX_VALUE)  # limiting!
+	def set(self, pos):  # translates levels 0-6 into encoder value
+		if not self.desired_position == round(pos):
+			self.desired_position = min(max(MIN_POS, self.desired_position), MAX_POS)
 			self._integral = 0
-
-	def set_override_level(self, level):
-		self.set(level, forced=True)
-		self._override_level = level
 
 	def reset_encoder(self):
 		self._encoder.reset()
 		self._prev_error = 0
 		self._integral = 0
 
-	def tote_offset(self):
-		#self.offset = -TOTE_HEIGHT / 2
-		pass
+	def do_pid(self):
+		error = self.desired_position - self.position()
+
+		derivative = (error - self._prev_error) / constants.general.control_loop_wait_time
+
+		self._integral += error * constants.general.control_loop_wait_time
+		self._integral = limit(self._integral, constants.tunable.kI_limit)
+
+		p = constants.tunable.kP * error
+		i = constants.tunable.kI * self._integral
+		d = constants.tunable.kD * derivative
+
+		if error > 0:  # goin up
+			power_limit = constants.tunable.up_power_limit
+		else:  # runs even if error is 0, but that doesn't matter.
+			power_limit = constants.tunable.down_power_limit
+
+		self._motor.set(limit(p + i + d, power_limit))
+
+		self._prev_error = error
 
 	def has_tote(self):
 		return self._photosensor.get()
 
-	def prepare_to_stack(self):
-		if self.state == States.TRACKING and self.at_setpoint():
-			self.set(level=2)
-			self.state = States.TRACKING_TO_WAIT
+	def position(self):
+		return self._encoder.getDistance()
 
 	def at_setpoint(self):
-		return abs(self._curr_error) < self.pid_tolerance
+		return abs(self.desired_position - self.position()) < PID_TOLERANCE
 
 	def update_smartdashboard(self):
-		SmartDashboard.putString("Elevator State", self.state.name)
-		SmartDashboard.putNumber("Elevator Setpoint", self._desired_position)
-		SmartDashboard.putString("Elevator Height", self._encoder.get())
+		SmartDashboard.putNumber("Elevator Setpoint", self.desired_position)
+		SmartDashboard.putString("Elevator Position", self.position())
 		SmartDashboard.putBoolean("Elevator at Setpoint", self.at_setpoint())
 
 		SmartDashboard.putNumber("Elevator Integral", self._integral)
-		SmartDashboard.putNumber("Elevator Error", self._curr_error)
 
-		if self.state == States.ZEROING:
-			SmartDashboard.putBoolean("ready_to_zero", not self._halleffect.get())
+		SmartDashboard.putBoolean("ready_to_zero", self.ready_to_zero)
+
+	# TODO change robot.py sets to offset changes
+
+	# TODO in constants.py
+
+	# Change so every component can populate a list of tunable variables that automatically get put into smartdashboard
+	# 	self.elevator_offset = 0
+	# 	self.neutral_position = 0
+	# TODO pip install manhole
+	# >>> import manhole
+	# >>> manhole.install()
