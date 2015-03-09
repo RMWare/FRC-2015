@@ -50,6 +50,7 @@ class _GeneralConstants(object):
 motors = _MotorConstants()
 tunable = _TunableConstants()
 solenoids = _SolenoidConstants()
+
 sensors = _SensorConstants()
 general = _GeneralConstants()
 
