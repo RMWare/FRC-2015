@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 from common.xbox import XboxController
 from wpilib import SampleRobot, Timer, SmartDashboard, LiveWindow, run
-
 from components import drive, intake, pneumatics, elevator
 from common import delay, util, constants
 from robotpy_ext.autonomous import AutonomousModeSelector
+from robotpy_ext.common_drivers import units
 import logging
 
 log = logging.getLogger("robot")
@@ -15,10 +15,11 @@ MODE_AUTONOMOUS = 1
 MODE_TELEOPERATED = 2
 
 
-class Drake(SampleRobot):
+class tachyon(SampleRobot):
 	# noinspection PyAttributeOutsideInit
-	# robotInit is called straight from __init__
+	# because robotInit is called straight from __init__
 	def robotInit(self):
+		SmartDashboard._reset()
 		self.xbox = XboxController(0)
 
 		constants.init_smartdashboard()
@@ -56,39 +57,48 @@ class Drake(SampleRobot):
 	def operatorControl(self):
 		SmartDashboard.putNumber('RobotMode', MODE_TELEOPERATED)
 		precise_delay = delay.PreciseDelay(constants.general.control_loop_wait_time)
-
+		self.intake.slide = False
 		while self.isOperatorControl() and self.isEnabled():
+
+			throttle = -self.xbox.left_y()
 			# Driving
-			self.drive.cheesy_drive(self.xbox.right_x(),
-			                        -self.xbox.left_y(),
-			                        self.xbox.left_bumper()
+			self.drive.cheesy_drive(util.deadband(self.xbox.right_x(), .1),
+			                        throttle,
+			                        util.deadband(self.xbox.left_bumper(), .1)
 			)
 
-			# the main thinger
+			self.xbox.rumble(0, 0)
+			self.intake.speed = 0
+
 			if self.xbox.right_trigger():
 				self.xbox.rumble(right=0.25)
-				self.elevator.prepare_to_stack()
-				if not self.elevator.has_tote():
-					self.intake.run_intake()
+				self.elevator.intaking = True
+				# if not self.elevator.has_tote():
+				self.intake.speed = .85
+			else:
+				self.elevator.intaking = False
+				if throttle < 0 and self.elevator.has_tote():
+					self.intake.speed = .85
 
-			elif self.xbox.left_trigger():
+			if self.xbox.left_trigger():
 				self.xbox.rumble(left=0.25)
-				self.intake.run_intake_backwards()
+				self.intake.speed = -1
 
-			else:  # abandon
-				self.xbox.rumble(0, 0)
-				self.elevator.set(level=1)
-				# if self.stick.getRawButton(constants.controls.offset):
-				# 	self.elevator.tote_offset()
-				# if self.stick.getRawButton(1):
-				# 	self.intake.extend_rails()  # rails out
+			if (not self.elevator.at_setpoint() and self.elevator.position() < units.convert(units.inch, units.tick, 16))\
+					or self.xbox.right_bumper():
+				self.intake.open = True
+			else:
+				self.intake.open = False
 
-			if (self.elevator.state == elevator.States.TRACKING_TO_PICKUP) or self.xbox.right_bumper():
-				self.intake.open()
+			if self.xbox.right_pressed():  # slow down
+				self.drive.speed_mult = 0.4
+			else:
+				self.drive.speed_mult = 0.75
 
-			if self.xbox.start():
-				self.elevator.state = elevator.States.ZEROING
-				self.elevator.enabled = True
+			if self.xbox.a():
+				self.intake.speed = 1
+
+			self.elevator.failsafe_override = self.xbox.b()
 
 			self.update_smartdashboard()
 			self.update()
@@ -110,7 +120,6 @@ class Drake(SampleRobot):
 					component.stop()
 					if self.ds.isFMSAttached():
 						log.error("In subsystem %s: %s" % (component, e))
-						# fail silently
 					else:
 						raise e
 
@@ -124,4 +133,4 @@ class Drake(SampleRobot):
 
 
 if __name__ == "__main__":
-	run(Drake)
+	run(tachyon, physics_enabled=True)

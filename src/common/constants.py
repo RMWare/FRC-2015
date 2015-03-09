@@ -34,9 +34,13 @@ class _TunableConstants(object):
 		self.kI = .00350
 		self.kD = .00002
 
-		self.kI_limit = 30
+		self.kI_limit = 50
 
-		self.power_limit = 0.6
+		self.up_power_limit = 0.5
+		self.down_power_limit = 0.4
+
+		self.elevator_offset = 0
+		self.neutral_position = 0
 
 
 class _GeneralConstants(object):
@@ -46,7 +50,6 @@ class _GeneralConstants(object):
 motors = _MotorConstants()
 tunable = _TunableConstants()
 solenoids = _SolenoidConstants()
-
 sensors = _SensorConstants()
 general = _GeneralConstants()
 

@@ -1,6 +1,6 @@
 import logging
 import math
-from wpilib import Talon, Gyro
+from wpilib import Talon, Gyro, SmartDashboard
 from common import util, constants
 from common.syncgroup import SyncGroup
 from . import Component
@@ -16,10 +16,12 @@ class Drive(Component):
 	# Cheesy Drive Stuff
 	quickstop_accumulator = 0
 	old_wheel = 0
-	throttle_deadband = 0.02
-	wheel_deadband = 0.02
 	sensitivity = 1.5
-	SETPOINT_TOLERANCE = 5
+	gyro_tolerance = 5
+
+	setpoint = 0
+
+	speed_mult = 1
 
 	def __init__(self):
 		super().__init__()
@@ -48,8 +50,6 @@ class Drive(Component):
 			:param quickturn: If the robot should drive arcade-drive style
 		"""
 
-		wheel = util.deadband(wheel, self.wheel_deadband)
-		throttle = util.deadband(throttle, self.throttle_deadband)
 		neg_intertia = wheel - self.old_wheel
 		self.old_wheel = wheel
 		wheel = util.sin_scale(wheel, 0.8, passes=3)
@@ -94,9 +94,8 @@ class Drive(Component):
 		elif right_pwm < -1:
 			left_pwm += over_power * (-1 - right_pwm)
 			right_pwm = -1
-
-		self.left_pwm = left_pwm
-		self.right_pwm = right_pwm
+		self.left_pwm = left_pwm * self.speed_mult
+		self.right_pwm = right_pwm * self.speed_mult
 
 	def tank_drive(self, left, right):
 		# Applies a bit of exponential scaling to improve control at low speeds
@@ -106,17 +105,20 @@ class Drive(Component):
 	def turn_gyro(self, setpoint):
 		# gyro is continuous
 		result = 0.6 * max(-1, min(1, self.gyro_error(setpoint)))
+
 		self.left_pwm = result
 		self.right_pwm = -result
 
 	def drive_gyro(self, setpoint, speed):
 		angle = self.gyro_error(setpoint)
-		self.cheesy_drive(angle, speed, False)
+		self.cheesy_drive(angle * 0.3, speed, False)
 
 	def at_setpoint(self, setpoint):
-		log.info(abs(self.gyro_error(setpoint)))
-		return abs(self.gyro_error(setpoint)) < self.SETPOINT_TOLERANCE
+		return abs(self.gyro_error(setpoint)) < self.gyro_tolerance
 
 	def gyro_error(self, setpoint):
 		e = setpoint - self.gyro.getAngle()
 		return e - 360 * round(e / 360)
+
+	def update_smartdashboard(self):
+		SmartDashboard.putNumber("gyro", self.gyro.getAngle())
