@@ -28,38 +28,12 @@ class _SensorConstants(object):
 	gyro = 0  # analog!
 
 
-class _TunableConstants(object):
-	def __init__(self):
-		self.kP = .00090
-		self.kI = .00350
-		self.kD = .00002
-
-		self.kI_limit = 50
-
-		self.up_power_limit = 0.5
-		self.down_power_limit = 0.4
-
-		self.elevator_offset = 0
-		self.neutral_position = 0
-
-
 class _GeneralConstants(object):
 	control_loop_wait_time = 0.025
 
 
 motors = _MotorConstants()
-tunable = _TunableConstants()
 solenoids = _SolenoidConstants()
 
 sensors = _SensorConstants()
 general = _GeneralConstants()
-
-
-def init_smartdashboard():
-	for k, v in tunable.__dict__.items():
-		SmartDashboard.putNumber(k, v)
-
-
-def update_smartdashboard():
-	for k, v in tunable.__dict__.items():
-		setattr(tunable, k, SmartDashboard.getNumber(k, v))

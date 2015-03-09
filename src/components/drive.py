@@ -119,6 +119,3 @@ class Drive(Component):
 	def gyro_error(self, setpoint):
 		e = setpoint - self.gyro.getAngle()
 		return e - 360 * round(e / 360)
-
-	def update_smartdashboard(self):
-		SmartDashboard.putNumber("gyro", self.gyro.getAngle())

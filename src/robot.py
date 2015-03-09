@@ -15,17 +15,11 @@ MODE_AUTONOMOUS = 1
 MODE_TELEOPERATED = 2
 
 
-class tachyon(SampleRobot):
+class Tachyon(SampleRobot):
 	# noinspection PyAttributeOutsideInit
 	# because robotInit is called straight from __init__
 	def robotInit(self):
-		SmartDashboard._reset()
 		self.xbox = XboxController(0)
-
-		constants.init_smartdashboard()
-
-		log.info("Initializing components")
-
 		self.drive = drive.Drive()
 		self.pneumatics = pneumatics.Pneumatics()
 		self.intake = intake.Intake()
@@ -41,7 +35,7 @@ class tachyon(SampleRobot):
 		self.sd_timer = Timer()  # timer for SmartDashboard update so we don't use all our bandwidth
 		self.sd_timer.start()
 		self.automodes = AutonomousModeSelector('autonomous', self.components)
-		log.info("Ready!")
+		self.init_smartdashboard()
 
 	def autonomous(self):
 		SmartDashboard.putNumber('RobotMode', MODE_AUTONOMOUS)
@@ -57,38 +51,35 @@ class tachyon(SampleRobot):
 	def operatorControl(self):
 		SmartDashboard.putNumber('RobotMode', MODE_TELEOPERATED)
 		precise_delay = delay.PreciseDelay(constants.general.control_loop_wait_time)
-		self.intake.slide = False
+
 		while self.isOperatorControl() and self.isEnabled():
 
-			throttle = -self.xbox.left_y()
 			# Driving
+			throttle = -self.xbox.left_y()
 			self.drive.cheesy_drive(util.deadband(self.xbox.right_x(), .1),
-			                        throttle,
-			                        util.deadband(self.xbox.left_bumper(), .1)
+			                        util.deadband(throttle, .1),
+			                        self.xbox.left_bumper()
 			)
 
 			self.xbox.rumble(0, 0)
-			self.intake.speed = 0
+			self.intake._speed = 0
 
 			if self.xbox.right_trigger():
 				self.xbox.rumble(right=0.25)
-				self.elevator.intaking = True
+				self.elevator.intake()
 				# if not self.elevator.has_tote():
-				self.intake.speed = .85
+				self.intake._speed = .85
 			else:
-				self.elevator.intaking = False
 				if throttle < 0 and self.elevator.has_tote():
-					self.intake.speed = .85
+					self.intake.spin(.85)
 
 			if self.xbox.left_trigger():
 				self.xbox.rumble(left=0.25)
-				self.intake.speed = -1
+				self.intake.spin(-1)
 
 			if (not self.elevator.at_setpoint() and self.elevator.position() < units.convert(units.inch, units.tick, 16))\
 					or self.xbox.right_bumper():
-				self.intake.open = True
-			else:
-				self.intake.open = False
+				self.intake.open()
 
 			if self.xbox.right_pressed():  # slow down
 				self.drive.speed_mult = 0.4
@@ -96,7 +87,7 @@ class tachyon(SampleRobot):
 				self.drive.speed_mult = 0.75
 
 			if self.xbox.a():
-				self.intake.speed = 1
+				self.intake.spin(1)
 
 			self.elevator.failsafe_override = self.xbox.b()
 
@@ -123,14 +114,28 @@ class tachyon(SampleRobot):
 					else:
 						raise e
 
+	def init_smartdashboard(self):
+		# Tunable (Reading from SD) initial setup
+		for component in self.components.values():
+			c_name = type(component).__name__
+			for var in component.tunables:
+				SmartDashboard.getTable().putValue("%s\%s" % (c_name, var), getattr(component, var))
+
 	def update_smartdashboard(self):
 		if not self.sd_timer.hasPeriodPassed(0.2):  # we don't need to update every cycle
 			return
+
+		# Tunable (Reading from SD)
 		for component in self.components.values():
-			component.update_smartdashboard()
+			c_name = type(component).__name__
+			for var in component.tunables:
+				setattr(component, var, SmartDashboard.getTable().getValue("%s\%s" % (c_name, var)))
 
-		constants.update_smartdashboard()
-
+			for k, v in component.__dict__.items():
+				try:
+					SmartDashboard.getTable().putValue("%s\%s" % (c_name, k), v)
+				except ValueError:
+					pass  # lole
 
 if __name__ == "__main__":
-	run(tachyon, physics_enabled=True)
+	run(Tachyon, physics_enabled=True)

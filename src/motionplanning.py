@@ -1,195 +1,142 @@
-class TrajectoryFollowingPositionController(object):
-	_goal = 0.0
-	_error = 0.0
-	_on_target_delta = 0.0
-	_result = 0.0
-
-	def __init__(self, kp, ki, kd, kv, ka, on_target_delta, config):
-		self._follower = TrajectoryFollower(kp, ki, kd, kv, ka, config)
-		self._on_target_delta = on_target_delta
-
-	def setGoal(self, current_state, goal):
-		self._goal = goal
-		self._follower.setGoal(current_state, goal)
-
-	def getGoal(self):
-		""" generated source for method getGoal """
-		return self._follower.getGoal()
-
-	def setConfig(self, config):
-		""" generated source for method setConfig """
-		self._follower.setConfig(config)
-
-	def getConfig(self):
-		""" generated source for method getConfig """
-		return self._follower.getConfig()
-
-	def update(self, position, velocity):
-		""" generated source for method update """
-		self._error = _goal - position
-		self._result = _follower.calculate(position, velocity)
-
-	def getSetpoint(self):
-		""" generated source for method getSetpoint """
-		return self._follower.getCurrentSetpoint()
-
-	def get(self):
-		""" generated source for method get """
-		return self._result
-
-	def reset(self):
-		""" generated source for method reset """
-		self._result = 0
-		self._error = 0
-		self._follower.setGoal(self._follower.getCurrentSetpoint(), self._goal)
-
-	def isOnTarget(self):
-		""" generated source for method isOnTarget """
-		return self._follower.isFinishedTrajectory() and Math.abs(self._error) < _on_target_delta
+import math
+from wpilib import Timer
 
 
-#
-#  * PID + Feedforward controller for following a Trajectory.
-#  *
-#  * @author Jared341
-#
 class TrajectoryFollower(object):
-	""" generated source for class TrajectoryFollower """
+	"""
+	PID + Feedforward controller for following a Trajectory.
+	@author Jared341
+	"""
 	class TrajectoryConfig(object):
-		""" generated source for class TrajectoryConfig """
-		dt = float()
-		max_acc = float()
-		max_vel = float()
+		dt = 0.1
+		max_acc = 0.0
+		max_vel = 0.0
 
-		def __str__(self):
-			""" generated source for method toString """
-			return "dt: " + self.dt + ", max_acc: " + self.max_acc + ", max_vel: " + self.max_vel
+		def __repr__(self):
+			return "TrajectoryConfig(dt: %s, max_acc: %s, max_vel: %s)" % (self.dt, self.max_acc, self.max_vel)
 
 	class TrajectorySetpoint(object):
-		""" generated source for class TrajectorySetpoint """
-		pos = float()
-		vel = float()
-		acc = float()
+		pos = 0.0
+		vel = 0.0
+		acc = 0.0
 
-		def __str__(self):
-			""" generated source for method toString """
-			return "pos: " + self.pos + ", vel: " + self.vel + ", acc: " + self.acc
+		def __repr__(self):
+			return "TrajectoryConfig(pos: %s, vel: %s, acc: %s)" % (self.pos, self.vel, self.acc)
 
-	kp_ = float()
-	ki_ = float()
-	kd_ = float()
-	kv_ = float()
-	ka_ = float()
-	last_error_ = float()
-	error_sum_ = float()
-	reset_ = True
-	last_timestamp_ = float()
-	next_state_ = TrajectorySetpoint()
-	config_ = TrajectoryConfig()
-	goal_position_ = float()
-	setpoint_ = TrajectorySetpoint()
+	_prev_error = 0.0
+	_error_sum = 0.0
+	_reset = True
+	_last_timestamp = 0.0
+	_next_state = TrajectorySetpoint()
+	_goal_position = 0.0
+	_setpoint = TrajectorySetpoint()
 
 	def __init__(self, kp, ki, kd, kv, ka, config):
-		""" generated source for method configure """
-		self.kp_ = kp
-		self.ki_ = ki
-		self.kd_ = kd
-		self.kv_ = kv
-		self.ka_ = ka
-		self.config_ = config
+		self._kp = kp
+		self._ki = ki
+		self._kd = kd
+		self._kv = kv
+		self._ka = ka
+		self._config = config
 
-	def setGoal(self, current_state, goal_position):
-		""" generated source for method setGoal """
-		self.goal_position_ = goal_position
-		self.setpoint_ = current_state
-		self.reset_ = True
-		self.error_sum_ = 0.0
+	def set_goal(self, current_state, goal_position):
+		self._goal_position = goal_position
+		#self._setpoint = current_state
+		self._reset = True
+		self._error_sum = 0.0
 
-	def getGoal(self):
-		""" generated source for method getGoal """
-		return self.goal_position_
+	def get_goal(self):
+		return self._goal_position
 
-	def getConfig(self):
-		""" generated source for method getConfig """
-		return self.config_
+	def set_config(self, config):
+		self._config = config
 
-	def setConfig(self, config):
-		""" generated source for method setConfig """
-		self.config_ = config
-
-	def calculate(self, position, velocity):
-		""" generated source for method calculate """
-		dt = self.config_.dt
-		if not self.reset_:
-			dt = now - last_timestamp_
-			self.last_timestamp_ = now
+	def calculate(self, position):
+		dt = self._config.dt
+		if not self._reset:
+			now = Timer.getFPGATimestamp()
+			dt = now - self._last_timestamp
+			self._last_timestamp = now
 		else:
-			self.last_timestamp_ = Timer.getFPGATimestamp()
-		if isFinishedTrajectory():
-			self.setpoint_.pos = goal_position_
-			self.setpoint_.vel = 0
-			self.setpoint_.acc = 0
+			self._last_timestamp = Timer.getFPGATimestamp()
+		if self.trajectory_finished():
+			self._setpoint.pos = self._goal_position
+			self._setpoint.vel = 0
+			self._setpoint.acc = 0
 		else:
 			#  Compute the new commanded position, velocity, and acceleration.
+			distance_to_go = self._goal_position - self._setpoint.pos
+			cur_vel = self._setpoint.vel
+			cur_vel2 = cur_vel * cur_vel
+			inverted = False
+
 			if distance_to_go < 0:
 				inverted = True
 				distance_to_go *= -1
 				cur_vel *= -1
 			#  Compute discriminants of the minimum and maximum reachable
 			#  velocities over the remaining distance.
+			max_reachable_velocity_disc = cur_vel2 / 2.0 + self._config.max_acc * distance_to_go
+			min_reachable_velocity_disc = cur_vel2 / 2.0 - self._config.max_acc * distance_to_go
+			cruise_vel = cur_vel
 			if min_reachable_velocity_disc < 0 or cruise_vel < 0:
-				cruise_vel = Math.min(config_.max_vel, Math.sqrt(max_reachable_velocity_disc))
-			#  Accelerate
-			#  to
-			#  cruise_vel
-			#  Decelerate
-			#  to zero
-			#  vel.
+				cruise_vel = min(self._config.max_vel, math.sqrt(max_reachable_velocity_disc))
+
+			# Accelerate to cruise velocity
+			t_start = (cruise_vel - cur_vel) / self._config.max_acc
+			x_start = cur_vel * t_start + .5 * self._config.max_acc * t_start * t_start
+
+			# Deccelerate to zero velocity
+			t_end = abs(cruise_vel / self._config.max_acc)
+			x_end = cruise_vel * t_end - .5 * self._config.max_acc * t_end * t_end
+			x_cruise = max(0, distance_to_go - x_start - x_end)
+			t_cruise = abs(x_cruise / cruise_vel)
+
 			#  Figure out where we should be one dt along this trajectory.
 			if t_start >= dt:
-				self.next_state_.pos = cur_vel * dt + 0.5 * config_.max_acc * dt * dt
-				self.next_state_.vel = cur_vel + config_.max_acc * dt
-				self.next_state_.acc = config_.max_acc
+				self._next_state.pos = cur_vel * dt + 0.5 * self._config.max_acc * dt * dt
+				self._next_state.vel = cur_vel + self._config.max_acc * dt
+				self._next_state.acc = self._config.max_acc
 			elif t_start + t_cruise >= dt:
-				self.next_state_.pos = x_start + cruise_vel * (dt - t_start)
-				self.next_state_.vel = cruise_vel
-				self.next_state_.acc = 0
+				self._next_state.pos = x_start + cruise_vel * (dt - t_start)
+				self._next_state.vel = cruise_vel
+				self._next_state.acc = 0
 			elif t_start + t_cruise + t_end >= dt:
-				self.next_state_.pos = x_start + x_cruise + cruise_vel * delta_t - 0.5 * config_.max_acc * delta_t * delta_t
-				self.next_state_.vel = cruise_vel - config_.max_acc * delta_t
-				self.next_state_.acc = -config_.max_acc
+				delta_t = dt - t_start - t_cruise
+				self._next_state.pos = x_start + x_cruise + cruise_vel * delta_t - 0.5 * self._config.max_acc * delta_t * delta_t
+				self._next_state.vel = cruise_vel - self._config.max_acc * delta_t
+				self._next_state.acc = -self._config.max_acc
 			else:
 				#  Trajectory ends this cycle.
-				self.next_state_.pos = distance_to_go
-				self.next_state_.vel = 0
-				self.next_state_.acc = 0
+				self._next_state.pos = distance_to_go
+				self._next_state.vel = 0
+				self._next_state.acc = 0
 			if inverted:
-				self.next_state_.pos *= -1
-				self.next_state_.vel *= -1
-				self.next_state_.acc *= -1
-			self.setpoint_.pos += next_state_.pos
-			self.setpoint_.vel = next_state_.vel
-			self.setpoint_.acc = next_state_.acc
-		error = self.setpoint_.pos - position
-		if self.reset_:
+				self._next_state.pos *= -1
+				self._next_state.vel *= -1
+				self._next_state.acc *= -1
+			self._setpoint.pos += self._next_state.pos
+			self._setpoint.vel = self._next_state.vel
+			self._setpoint.acc = self._next_state.acc
+		error = self._setpoint.pos - position
+		if self._reset:
 			#  Prevent jump in derivative term when we have been reset.
-			self.reset_ = False
-			self.last_error_ = error
-			self.error_sum_ = 0
-		output = self.kp_ * error + self.kd_ * ((error - self.last_error_) / dt - self.setpoint_.vel) + (self.kv_ * self.setpoint_.vel + self.ka_ * self.setpoint_.acc)
-		if output < 1.0 and output > -1.0:
+			self._reset = False
+			self._prev_error = error
+			self._error_sum = 0
+		output = self._kp * error + self._kd * ((error - self._prev_error) / dt - self._setpoint.vel) + (self._kv * self._setpoint.vel + self._ka * self._setpoint.acc)
+		if 1.0 > output > -1.0:
+
 			#  Only integrate error if the output isn't already saturated.
-			self.error_sum_ += error * dt
-		output += ki_ * error_sum_
-		self.last_error_ = error
+			self._error_sum += error * dt
+		output += self._ki * self._error_sum
+		self._prev_error = error
 		return output
 
-	def isFinishedTrajectory(self):
-		""" generated source for method isFinishedTrajectory """
-		return Math.abs(self.setpoint_.pos - self.goal_position_) < 1E-3 and Math.abs(self.setpoint_.vel) < 1E-2
+	def trajectory_finished(self):
+		return abs(self._setpoint.pos - self._goal_position) < 1E-3 and abs(self._setpoint.vel) < 1E-2
 
-	def getCurrentSetpoint(self):
-		""" generated source for method getCurrentSetpoint """
-		return self.setpoint_
+	def get_setpoint(self):
+		return self._setpoint
 
 

@@ -11,19 +11,31 @@ class Intake(Component):
 		self._l_motor = Talon(constants.motors.intake_l)
 		self._r_motor = Talon(constants.motors.intake_r)
 		self._intake_piston = Solenoid(0, constants.solenoids.intake)
-		self.speed = 0
-		self.open = False
-		self.slide = False
+
+		self._left_pwm = 0
+		self._right_pwm = 0
+		self._open = False
 
 	def update(self):
 
-		self._l_motor.set(self.speed)
-		self._r_motor.set(self.speed * (1 if self.slide else -1))
+		self._l_motor.set(self._left_pwm)
+		self._r_motor.set(self._right_pwm)
 
-		if self.open:
+		if self._open:
 			self._intake_piston.set(True)
 		else:
 			self._intake_piston.set(False)
+
+		self._left_pwm = 0
+		self._right_pwm = 0
+		self._open = False
+
+	def spin(self, power, same_direction=False):
+		self._left_pwm = power
+		self._right_pwm = power * (1 if same_direction else -1)
+
+	def open(self):
+		self._open = True
 
 	def stop(self):
 		"""Disables EVERYTHING. Only use in case of critical failure"""
