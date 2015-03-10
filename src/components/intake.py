@@ -4,7 +4,6 @@ from . import Component
 
 
 class Intake(Component):
-
 	def __init__(self):
 		super().__init__()
 

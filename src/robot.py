@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
+from networktables import NetworkTable
 from common.xbox import XboxController
 from wpilib import SampleRobot, Timer, SmartDashboard, LiveWindow, run
 from components import drive, intake, pneumatics, elevator
-from common import delay, util, constants
+from common import delay, util, constants, quickdebug
 from robotpy_ext.autonomous import AutonomousModeSelector
 from robotpy_ext.common_drivers import units
 import logging
@@ -35,7 +36,7 @@ class Tachyon(SampleRobot):
 		self.sd_timer = Timer()  # timer for SmartDashboard update so we don't use all our bandwidth
 		self.sd_timer.start()
 		self.automodes = AutonomousModeSelector('autonomous', self.components)
-		self.init_smartdashboard()
+		quickdebug.init()
 
 	def autonomous(self):
 		SmartDashboard.putNumber('RobotMode', MODE_AUTONOMOUS)
@@ -45,7 +46,7 @@ class Tachyon(SampleRobot):
 	def disabled(self):
 		SmartDashboard.putNumber('RobotMode', MODE_DISABLED)
 		while self.isDisabled():
-			self.update_smartdashboard()
+			self.update_networktables()
 			Timer.delay(0.01)
 
 	def operatorControl(self):
@@ -66,7 +67,7 @@ class Tachyon(SampleRobot):
 
 			if self.xbox.right_trigger():
 				self.xbox.rumble(right=0.25)
-				self.elevator.intake()
+				# self.elevator.intake()
 				# if not self.elevator.has_tote():
 				self.intake._speed = .85
 			else:
@@ -91,7 +92,7 @@ class Tachyon(SampleRobot):
 
 			self.elevator.failsafe_override = self.xbox.b()
 
-			self.update_smartdashboard()
+			self.update_networktables()
 			self.update()
 
 			precise_delay.wait()
@@ -114,28 +115,12 @@ class Tachyon(SampleRobot):
 					else:
 						raise e
 
-	def init_smartdashboard(self):
-		# Tunable (Reading from SD) initial setup
-		for component in self.components.values():
-			c_name = type(component).__name__
-			for var in component.tunables:
-				SmartDashboard.getTable().putValue("%s\%s" % (c_name, var), getattr(component, var))
-
-	def update_smartdashboard(self):
+	def update_networktables(self):
 		if not self.sd_timer.hasPeriodPassed(0.2):  # we don't need to update every cycle
 			return
+		quickdebug.sync()
 
-		# Tunable (Reading from SD)
-		for component in self.components.values():
-			c_name = type(component).__name__
-			for var in component.tunables:
-				setattr(component, var, SmartDashboard.getTable().getValue("%s\%s" % (c_name, var)))
 
-			for k, v in component.__dict__.items():
-				try:
-					SmartDashboard.getTable().putValue("%s\%s" % (c_name, k), v)
-				except ValueError:
-					pass  # lole
 
 if __name__ == "__main__":
 	run(Tachyon, physics_enabled=True)

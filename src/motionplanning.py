@@ -1,5 +1,6 @@
 import math
 from wpilib import Timer
+from common import quickdebug
 
 
 class TrajectoryFollower(object):
@@ -38,6 +39,7 @@ class TrajectoryFollower(object):
 		self._kv = kv
 		self._ka = ka
 		self._config = config
+		quickdebug.add_tunables(self, ["_kp", "_ki", "_kd", "_kv", "_ka"])
 
 	def set_goal(self, current_state, goal_position):
 		self._goal_position = goal_position

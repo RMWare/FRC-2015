@@ -1,6 +1,6 @@
 import logging
-from wpilib import DigitalInput, Encoder, Talon, SmartDashboard, Timer
-from common import constants
+from wpilib import DigitalInput, Encoder, Talon
+from common import constants, quickdebug
 from common.syncgroup import SyncGroup
 from robotpy_ext.common_drivers import units
 from . import Component
@@ -9,7 +9,7 @@ from motionplanning import TrajectoryFollower
 log = logging.getLogger("elevator")
 
 MAX_POS = 24750
-MIN_POS = 0#units.convert(units.inch, units.tick, 1 / 8)
+MIN_POS = 0  # units.convert(units.inch, units.tick, 1 / 8)
 
 
 class Elevator(Component):
@@ -32,7 +32,12 @@ class Elevator(Component):
 		self._ready_to_zero = False
 
 		self.neutral_position = 0
-		self.tunables = ["neutral_position"]
+		quickdebug.add_tunables(self, "neutral_position")
+		quickdebug.add_printables(self, [
+			self._encoder.getDistance,
+			self._halleffect.get,
+			self._photosensor.get
+		])
 
 	def stop(self):
 		self._motor.set(0)
