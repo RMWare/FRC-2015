@@ -21,7 +21,7 @@ class Drive(Component):
 
 	setpoint = 0
 
-	speed_mult = 1
+	speed_multiplier = 1
 
 	def __init__(self):
 		super().__init__()
@@ -94,8 +94,8 @@ class Drive(Component):
 		elif right_pwm < -1:
 			left_pwm += over_power * (-1 - right_pwm)
 			right_pwm = -1
-		self.left_pwm = left_pwm * self.speed_mult
-		self.right_pwm = right_pwm * self.speed_mult
+		self.left_pwm = left_pwm * self.speed_multiplier
+		self.right_pwm = right_pwm * self.speed_multiplier
 
 	def tank_drive(self, left, right):
 		# Applies a bit of exponential scaling to improve control at low speeds

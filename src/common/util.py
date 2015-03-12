@@ -49,12 +49,3 @@ class AutoNumberEnum(enum.Enum):
 		obj = object.__new__(cls)
 		obj._value_ = value
 		return obj
-
-# also fix units
-PITCH_DIAMETER = 1.432
-TICKS_PER_REVOLUTION = 2048
-INCHES_PER_TICK = (PITCH_DIAMETER * math.pi) / TICKS_PER_REVOLUTION
-units.tick = units.Unit(base_unit=units.inch, base_to_unit=lambda x: x * (1 / INCHES_PER_TICK),
-                        unit_to_base=lambda x: x * INCHES_PER_TICK)
-units.tote = units.Unit(base_unit=units.inch, base_to_unit=lambda x: x / 12.125, unit_to_base=lambda x: x * 12.125)
-

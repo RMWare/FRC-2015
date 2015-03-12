@@ -1,5 +1,4 @@
 # This file is named misleadingly, lol
-from wpilib import SmartDashboard
 
 
 class _MotorConstants(object):  # all pins should be different

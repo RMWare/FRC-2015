@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-from networktables import NetworkTable
 from common.xbox import XboxController
 from wpilib import SampleRobot, Timer, SmartDashboard, LiveWindow, run
 from components import drive, intake, pneumatics, elevator
 from common import delay, util, constants, quickdebug
 from robotpy_ext.autonomous import AutonomousModeSelector
-from robotpy_ext.common_drivers import units
 import logging
 
 log = logging.getLogger("robot")
@@ -27,14 +25,14 @@ class Tachyon(SampleRobot):
 		self.elevator = elevator.Elevator()
 
 		self.components = {
-			'drive': self.drive,
-			'pneumatics': self.pneumatics,
-			'intake': self.intake,
-			'elevator': self.elevator
+			'drive': self.drive
+			, 'pneumatics': self.pneumatics
+			, 'intake': self.intake
+			, 'elevator': self.elevator
 		}
 
-		self.sd_timer = Timer()  # timer for SmartDashboard update so we don't use all our bandwidth
-		self.sd_timer.start()
+		self.nt_timer = Timer()  # timer for SmartDashboard update so we don't use all our bandwidth
+		self.nt_timer.start()
 		self.automodes = AutonomousModeSelector('autonomous', self.components)
 		quickdebug.init()
 
@@ -46,51 +44,42 @@ class Tachyon(SampleRobot):
 	def disabled(self):
 		SmartDashboard.putNumber('RobotMode', MODE_DISABLED)
 		while self.isDisabled():
-			self.update_networktables()
 			Timer.delay(0.01)
 
 	def operatorControl(self):
 		SmartDashboard.putNumber('RobotMode', MODE_TELEOPERATED)
 		precise_delay = delay.PreciseDelay(constants.general.control_loop_wait_time)
-
 		while self.isOperatorControl() and self.isEnabled():
-
 			# Driving
-			throttle = -self.xbox.left_y()
-			self.drive.cheesy_drive(util.deadband(self.xbox.right_x(), .1),
-			                        util.deadband(throttle, .1),
-			                        self.xbox.left_bumper()
-			)
-
-			self.xbox.rumble(0, 0)
-			self.intake._speed = 0
+			wheel = util.deadband(self.xbox.right_x(), .15)
+			throttle = -util.deadband(self.xbox.left_y(), .15)
+			self.drive.cheesy_drive(wheel, throttle, self.xbox.left_bumper())
 
 			if self.xbox.right_trigger():
-				self.xbox.rumble(right=0.25)
-				# self.elevator.intake()
-				# if not self.elevator.has_tote():
-				self.intake._speed = .85
-			else:
-				if throttle < 0 and self.elevator.has_tote():
-					self.intake.spin(.85)
+				# if self.elevator.at_setpoint():
+				# 	self.elevator.set_goal(0)  # TODO BOTTOM
+				# 	self.elevator.set_goal(10)  # TODO TOP
+				if not self.elevator.has_tote():
+					self.intake.spin(1)
+			# else:
+			# 	if throttle < 0 and self.elevator.has_tote():
+			# 		self.intake.spin(.85)
 
 			if self.xbox.left_trigger():
-				self.xbox.rumble(left=0.25)
 				self.intake.spin(-1)
 
-			if (not self.elevator.at_setpoint() and self.elevator.position() < units.convert(units.inch, units.tick, 16))\
-					or self.xbox.right_bumper():
+			if not self.elevator.at_setpoint() and self.elevator.position() < 12:
 				self.intake.open()
 
 			if self.xbox.right_pressed():  # slow down
-				self.drive.speed_mult = 0.4
+				self.drive.speed_multiplier = 0.4
 			else:
-				self.drive.speed_mult = 0.75
+				self.drive.speed_multiplier = 0.8
 
 			if self.xbox.a():
 				self.intake.spin(1)
 
-			self.elevator.failsafe_override = self.xbox.b()
+			self.elevator.seek_to_top = self.xbox.b()
 
 			self.update_networktables()
 			self.update()
@@ -98,28 +87,27 @@ class Tachyon(SampleRobot):
 			precise_delay.wait()
 
 	def test(self):
+		for component in self.components.values():
+			component.stop()
 		while self.isTest() and self.isEnabled():
 			LiveWindow.run()
+			self.update_networktables()
 
 	def update(self):
 		""" Calls the update functions for every component """
 		for component in self.components.values():
-			if component.enabled:
 				try:
 					component.update()
 				except Exception as e:
-					component.enabled = False
-					component.stop()
 					if self.ds.isFMSAttached():
 						log.error("In subsystem %s: %s" % (component, e))
 					else:
 						raise e
 
 	def update_networktables(self):
-		if not self.sd_timer.hasPeriodPassed(0.2):  # we don't need to update every cycle
+		if not self.nt_timer.hasPeriodPassed(0.2):  # we don't need to update every cycle
 			return
 		quickdebug.sync()
-
 
 
 if __name__ == "__main__":
