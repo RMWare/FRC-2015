@@ -54,21 +54,26 @@ class Tachyon(SampleRobot):
 			wheel = util.deadband(self.xbox.right_x(), .15)
 			throttle = -util.deadband(self.xbox.left_y(), .15)
 			self.drive.cheesy_drive(wheel, throttle, self.xbox.left_bumper())
-
-			if self.xbox.right_trigger():
-				# if self.elevator.at_setpoint():
-				# 	self.elevator.set_goal(0)  # TODO BOTTOM
-				# 	self.elevator.set_goal(10)  # TODO TOP
-				if not self.elevator.has_tote():
-					self.intake.spin(1)
+			#
+			# if self.xbox.right_trigger():
+			# 	# Main stacking logic follows
+			# 	if self.elevator.at_setpoint():
+			# 		if self.elevator.has_tote():  # going up
+			# 			self.elevator.set_goal(0)  # TODO BOTTOM
+			# 		else:
+			# 			self.elevator.set_goal(20)  # TODO TOP
+			# 	if not self.elevator.has_tote():
+			# 		self.intake.spin(1)
+			# else:
+			# 	self.elevator.set_goal(self.elevator.NEUTRAL_POSITION)
 			# else:
 			# 	if throttle < 0 and self.elevator.has_tote():
 			# 		self.intake.spin(.85)
 
 			if self.xbox.left_trigger():
-				self.intake.spin(-1)
+				self.elevator.set_goal(0)  # drop totes
 
-			if not self.elevator.at_setpoint() and self.elevator.position() < 12:
+			if self.xbox.right_bumper():
 				self.intake.open()
 
 			if self.xbox.right_pressed():  # slow down

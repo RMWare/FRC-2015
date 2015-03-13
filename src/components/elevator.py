@@ -52,12 +52,12 @@ class Elevator(Component):
 	def update(self):
 		if not self._zeroed:
 			if not self._ready_to_zero:
-				self._motor.set(.2)  # move the elevator down
+				self._motor.set(-.2)  # move the elevator down
 				if not self._halleffect.get():  # until we've reached the hall effect sensor
 					self._ready_to_zero = True
 			else:  # ready to zero!
 				# goes up until the elevator is raised off the hall effect.
-				self._motor.set(-.2)  # go up
+				self._motor.set(.2)  # go up
 				if self._halleffect.get():  # until we're raised off the hall effect
 					self.reset()  # then reset our encoder
 					self._zeroed = True

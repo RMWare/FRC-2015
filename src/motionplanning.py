@@ -26,14 +26,14 @@ class TrajectoryFollower(object):
 	_setpoint = TrajectorySetpoint()
 
 	def __init__(self):
-		self._kp = .0009
-		self._ki = .0035
-		self._kd = .00002
-		self._kv = .01
-		self._ka = .01
+		self._kp = .2
+		self._ki = 1.35
+		self._kd = 0
+		self._kv = .0
+		self._ka = .0
 
-		self._max_acc = 0.5
-		self._max_vel = 1
+		self._max_acc = 200
+		self._max_vel = 100000000000
 
 		quickdebug.add_tunables(self, ["_kp", "_ki", "_kd", "_kv", "_ka", "_max_acc", "_max_vel"])
 		quickdebug.add_printables(self, ['_goal_position', '_error_sum', '_prev_error', '_setpoint', ('trajectory finished?', self.trajectory_finished)])
@@ -46,7 +46,7 @@ class TrajectoryFollower(object):
 		return self._goal_position
 
 	def calculate(self, position):
-		dt = Timer.getFPGATimestamp()
+		dt = .025
 		if not self._reset:
 			now = Timer.getFPGATimestamp()
 			dt = now - self._last_timestamp
