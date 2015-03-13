@@ -15,5 +15,3 @@ def test_failure(control, fake_time, robot):
 	for component in robot.components.values():
 		component.enabled = False
 		component.stop()
-
-	#assert robot.  # TODO assert that all PWM outputs are set to 0

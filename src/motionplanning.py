@@ -26,8 +26,8 @@ class TrajectoryFollower(object):
 	_setpoint = TrajectorySetpoint()
 
 	def __init__(self):
-		self._kp = .2
-		self._ki = 1.35
+		self._kp = .35
+		self._ki = .0
 		self._kd = 0
 		self._kv = .0
 		self._ka = .0

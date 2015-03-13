@@ -26,13 +26,7 @@ class _SensorConstants(object):
 	photosensor = 3
 	gyro = 0  # analog!
 
-
-class _GeneralConstants(object):
-	control_loop_wait_time = 0.025
-
-
 motors = _MotorConstants()
 solenoids = _SolenoidConstants()
 
 sensors = _SensorConstants()
-general = _GeneralConstants()
