@@ -51,7 +51,7 @@ class Elevator(Component):
 			('elevator position', self._position_encoder.getDistance),
 			('hall effect', self._zeroing_magnet.get),
 			('photo sensor', self._intake_photosensor.get),
-			"_zeroed", "_ready_to_zero", "_error",
+			"_zeroed", "_ready_to_zero", "_max_position",
 			('at setpoint', self.at_goal)
 		])
 
@@ -75,7 +75,8 @@ class Elevator(Component):
 			return
 
 		# Making sure our elevator doesn't crash into the top lol
-		if self._stabilizer_photosensor.get():  # If our passive elevator is too high
+		# TODO MAKE sURE THis is ENABLED
+		if False: # self._stabilizer_photosensor.get():  # If our passive elevator is too high
 			self._max_position = self.position() - 0.5  # limit our height
 			self.set_goal(self.position())
 		else:

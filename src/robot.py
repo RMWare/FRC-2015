@@ -52,12 +52,14 @@ class Tachyon(SampleRobot):
 		SmartDashboard.putNumber('RobotMode', MODE_TELEOPERATED)
 		precise_delay = delay.PreciseDelay(CONTROL_LOOP_WAIT_TIME)
 		while self.isOperatorControl() and self.isEnabled():
+			# Default closed
+			self.intake.close()
+
 			# Driving
 			wheel = util.deadband(self.xbox.right_x() * .6, .15)
 			throttle = -util.deadband(self.xbox.left_y(), .15)
 
 			# Main stacking logic follows
-
 			if self.xbox.right_trigger():
 				self.elevator.intake(force_pickup=self.xbox.a())
 				self.intake.spin(1)
@@ -69,6 +71,9 @@ class Tachyon(SampleRobot):
 				self.elevator.set_goal(self.elevator.DROP_POSITION)  # release_bin totes
 				self.intake.open()
 				self.elevator.release_bin()
+
+			if self.xbox.right_bumper():
+				self.intake.open()  # yee
 
 			if self.xbox.right_pressed():  # slow down
 				self.drive.cheesy_drive(wheel, throttle * 0.4, self.xbox.left_bumper())
