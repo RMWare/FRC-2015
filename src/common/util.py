@@ -1,7 +1,5 @@
 import enum
 from math import sin, pi
-import math
-from robotpy_ext.common_drivers import units
 
 
 def deadband(val, dead):
@@ -26,7 +24,7 @@ def sin_scale(val, non_linearity, passes):
 	if passes == 1:
 		return scaled
 	else:
-		return sin_scale(scaled, non_linearity, passes=passes-1)
+		return sin_scale(scaled, non_linearity, passes - 1)
 
 
 def limit(val, lim=1):

@@ -16,14 +16,15 @@ class _MotorConstants(object):  # all pins should be different
 
 class _SolenoidConstants(object):
 	intake = 0
-	outtake = 1
+	dropper = 1
 
 
 class _SensorConstants(object):
 	elevator_encoder_a = 0
 	elevator_encoder_b = 1
 	elevator_hall_effect = 2
-	photosensor = 3
+	intake_photosensor = 3
+	stabilizer_photosensor = 4
 	gyro = 0  # analog!
 
 motors = _MotorConstants()

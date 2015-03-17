@@ -1,7 +1,7 @@
 import logging
 import math
-from wpilib import Talon, Gyro, SmartDashboard
-from common import util, constants
+from wpilib import Talon, Gyro
+from common import util, constants, quickdebug
 from common.syncgroup import SyncGroup
 from . import Component
 
@@ -19,16 +19,14 @@ class Drive(Component):
 	sensitivity = 1.5
 	gyro_tolerance = 5
 
-	setpoint = 0
-
-	speed_multiplier = 1
-
 	def __init__(self):
 		super().__init__()
 
 		self.l_motor = SyncGroup(Talon, constants.motors.drive_left)
 		self.r_motor = SyncGroup(Talon, constants.motors.drive_right)
 		self.gyro = Gyro(constants.sensors.gyro)
+		# self.gyro = AnalogInput(constants.sensors.gyro)
+		quickdebug.add_printables(self, ('error', self.gyro.getAngle))
 
 	def update(self):
 		self.l_motor.set(self.left_pwm)
@@ -40,7 +38,8 @@ class Drive(Component):
 		self.r_motor.set(0)
 
 	def reset_gyro(self):
-		self.gyro.reset()
+		pass
+		# self.gyro.reset_encoder()
 
 	def cheesy_drive(self, wheel, throttle, quickturn):
 		"""
@@ -94,8 +93,8 @@ class Drive(Component):
 		elif right_pwm < -1:
 			left_pwm += over_power * (-1 - right_pwm)
 			right_pwm = -1
-		self.left_pwm = left_pwm * self.speed_multiplier
-		self.right_pwm = right_pwm * self.speed_multiplier
+		self.left_pwm = left_pwm
+		self.right_pwm = right_pwm
 
 	def tank_drive(self, left, right):
 		# Applies a bit of exponential scaling to improve control at low speeds
@@ -111,11 +110,11 @@ class Drive(Component):
 
 	def drive_gyro(self, setpoint, speed):
 		angle = self.gyro_error(setpoint)
-		self.cheesy_drive(angle * 0.3, speed, False)
+		self.cheesy_drive(angle * 0.1, speed, False)
 
-	def at_setpoint(self, setpoint):
+	def at_goal(self, setpoint):
 		return abs(self.gyro_error(setpoint)) < self.gyro_tolerance
 
-	def gyro_error(self, setpoint):
+	def gyro_error(self, setpoint=0):
 		e = setpoint - self.gyro.getAngle()
 		return e - 360 * round(e / 360)

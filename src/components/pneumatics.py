@@ -1,5 +1,6 @@
-from wpilib import Compressor, PowerDistributionPanel, SmartDashboard
+from wpilib import Compressor, PowerDistributionPanel
 from . import Component
+from common import quickdebug
 
 
 class Pneumatics(Component):
@@ -9,6 +10,8 @@ class Pneumatics(Component):
 		super().__init__()
 		self.comp = Compressor()
 		self.pdp = PowerDistributionPanel()
+
+		quickdebug.add_printables(self, [('current', self.pdp.getTotalCurrent), ('voltage', self.pdp.getVoltage)])
 
 	def update(self):
 		"""

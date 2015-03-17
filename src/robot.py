@@ -2,7 +2,7 @@
 from common.xbox import XboxController
 from wpilib import SampleRobot, Timer, SmartDashboard, LiveWindow, run
 from components import drive, intake, pneumatics, elevator
-from common import delay, util, constants, quickdebug
+from common import delay, util, quickdebug
 from robotpy_ext.autonomous import AutonomousModeSelector
 import logging
 
@@ -15,6 +15,7 @@ MODE_TELEOPERATED = 2
 
 CONTROL_LOOP_WAIT_TIME = 0.025
 
+
 class Tachyon(SampleRobot):
 	# noinspection PyAttributeOutsideInit
 	# because robotInit is called straight from __init__
@@ -26,10 +27,10 @@ class Tachyon(SampleRobot):
 		self.elevator = elevator.Elevator()
 
 		self.components = {
-			'drive': self.drive
-			, 'pneumatics': self.pneumatics
-			, 'intake': self.intake
-			, 'elevator': self.elevator
+			'drive': self.drive,
+			'pneumatics': self.pneumatics,
+			'intake': self.intake,
+			'elevator': self.elevator,
 		}
 
 		self.nt_timer = Timer()  # timer for SmartDashboard update so we don't use all our bandwidth
@@ -52,34 +53,36 @@ class Tachyon(SampleRobot):
 		precise_delay = delay.PreciseDelay(CONTROL_LOOP_WAIT_TIME)
 		while self.isOperatorControl() and self.isEnabled():
 			# Driving
-			wheel = util.deadband(self.xbox.right_x(), .15)
+			wheel = util.deadband(self.xbox.right_x() * .6, .15)
 			throttle = -util.deadband(self.xbox.left_y(), .15)
 
 			# Main stacking logic follows
-			self.elevator.set_goal(self.elevator.HOLD_POSITION)  # default hold
 
 			if self.xbox.right_trigger():
-				self.elevator.intake()
+				self.elevator.intake(force_pickup=self.xbox.a())
 				self.intake.spin(1)
-			if self.xbox.left_trigger():
-				self.elevator.set_goal(self.elevator.DROP_POSITION)  # drop totes
-				self.intake.open()
+			else:
+				self.intake.spin(0)
+				self.elevator.set_goal(self.elevator.HOLD_POSITION)  # default hold
 
-			if self.xbox.right_bumper():
+			if self.xbox.left_trigger():
+				self.elevator.set_goal(self.elevator.DROP_POSITION)  # release_bin totes
 				self.intake.open()
+				self.elevator.release_bin()
 
 			if self.xbox.right_pressed():  # slow down
-				self.drive.speed_multiplier = 0.4
+				self.drive.cheesy_drive(wheel, throttle * 0.4, self.xbox.left_bumper())
 			else:
-				self.drive.speed_multiplier = 0.8
-
-			if self.xbox.a():
-				self.intake.spin(1)
+				self.drive.cheesy_drive(wheel, throttle * 0.8, self.xbox.left_bumper())
 
 			if self.xbox.b():
-				self.set_goal(30)
+				self.elevator.set_goal(30)
 
-			self.drive.cheesy_drive(wheel, throttle, self.xbox.left_bumper())
+			if self.xbox.x():
+				self.intake.spin(-1)
+
+			if self.xbox.y():
+				self.intake.spin(1, same_direction=True)
 
 			self.update_networktables()
 			self.update()

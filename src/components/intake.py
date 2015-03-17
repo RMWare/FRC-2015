@@ -16,7 +16,6 @@ class Intake(Component):
 		self._open = False
 
 	def update(self):
-
 		self._l_motor.set(self._left_pwm)
 		self._r_motor.set(self._right_pwm)
 
@@ -25,16 +24,15 @@ class Intake(Component):
 		else:
 			self._intake_piston.set(False)
 
-		self._left_pwm = 0
-		self._right_pwm = 0
-		self._open = False
-
 	def spin(self, power, same_direction=False):
 		self._left_pwm = power
 		self._right_pwm = power * (1 if same_direction else -1)
 
 	def open(self):
 		self._open = True
+
+	def close(self):
+		self._open = False
 
 	def stop(self):
 		"""Disables EVERYTHING. Only use in case of critical failure"""

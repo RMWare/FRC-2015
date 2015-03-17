@@ -9,6 +9,7 @@ class TrajectoryFollower(object):
 	Originally written by Jared341 in Java
 	Heavily modified.
 	"""
+
 	class TrajectorySetpoint(object):
 		pos = 0.0
 		vel = 0.0
@@ -36,7 +37,8 @@ class TrajectoryFollower(object):
 		self._max_vel = 100000000000
 
 		quickdebug.add_tunables(self, ["_kp", "_ki", "_kd", "_kv", "_ka", "_max_acc", "_max_vel"])
-		quickdebug.add_printables(self, ['_goal_position', '_error_sum', '_prev_error', '_setpoint', ('trajectory finished?', self.trajectory_finished)])
+		quickdebug.add_printables(self, ['_goal_position', '_error_sum', '_prev_error', '_setpoint',
+		                                 ('trajectory finished?', self.trajectory_finished)])
 
 	def set_goal(self, goal_position):
 		self._goal_position = goal_position
@@ -58,7 +60,7 @@ class TrajectoryFollower(object):
 			self._setpoint.vel = 0
 			self._setpoint.acc = 0
 		else:
-			#  Compute the new commanded position, velocity, and acceleration.
+			# Compute the new commanded position, velocity, and acceleration.
 			distance_to_go = self._goal_position - self._setpoint.pos
 			cur_vel = self._setpoint.vel
 			cur_vel2 = cur_vel * cur_vel
@@ -68,8 +70,8 @@ class TrajectoryFollower(object):
 				inverted = True
 				distance_to_go *= -1
 				cur_vel *= -1
-			#  Compute discriminants of the minimum and maximum reachable
-			#  velocities over the remaining distance.
+			# Compute discriminants of the minimum and maximum reachable
+			# velocities over the remaining distance.
 			max_reachable_velocity_disc = cur_vel2 / 2.0 + self._max_acc * distance_to_go
 			min_reachable_velocity_disc = cur_vel2 / 2.0 - self._max_acc * distance_to_go
 			cruise_vel = cur_vel
@@ -114,14 +116,16 @@ class TrajectoryFollower(object):
 			self._setpoint.acc = self._next_state.acc
 		error = self._setpoint.pos - position
 		if self._reset:
-			#  Prevent jump in derivative term when we have been reset.
+			# Prevent jump in derivative term when we have been reset_encoder.
 			self._reset = False
 			self._prev_error = error
 			self._error_sum = 0
-		output = self._kp * error + self._kd * ((error - self._prev_error) / dt - self._setpoint.vel) + (self._kv * self._setpoint.vel + self._ka * self._setpoint.acc)
-		if 1.0 > output > -1.0:
 
-			#  Only integrate error if the output isn't already saturated.
+		output = self._kp * error + self._kd * ((error - self._prev_error) / dt - self._setpoint.vel) + (
+			self._kv * self._setpoint.vel + self._ka * self._setpoint.acc)
+
+		if 1.0 > output > -1.0:
+			# Only integrate error if the output isn't already saturated.
 			self._error_sum += error * dt
 		output += self._ki * self._error_sum
 		self._prev_error = error

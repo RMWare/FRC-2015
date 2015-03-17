@@ -25,7 +25,7 @@ MODES = {
 	'Autonomous': 0x70,  # Not E-stop, Enabled, Auto 01110000
 	'Disabled': 0x40,  # Not E-stop
 	'Test': 0x62,  # Not E-stop, Enabled, Test 01100010
-	'Soft Reboot': 0x80,  # reset 1000 0000, doesn't need Not E-stop?
+	'Soft Reboot': 0x80,  # reset_encoder 1000 0000, doesn't need Not E-stop?
 	'Emergency Stopped': 0x00  # ESTOP 0000 0000
 }
 

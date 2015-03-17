@@ -14,7 +14,7 @@ class SyncGroup(object):
 		if len(args_list) == 0:
 			raise ValueError("No arguments provided to instantiate the class with, therefore 0 instances created!")
 		object.__setattr__(self, "_items",
-		                   [proxied_class(*arg) if isinstance(arg, list) else proxied_class(arg) for arg in args_list]
+			[proxied_class(*arg) if isinstance(arg, list) else proxied_class(arg) for arg in args_list]
 		)
 
 	def __getattribute__(self, item):

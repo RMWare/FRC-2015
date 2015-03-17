@@ -44,16 +44,12 @@ class XboxController(object):
 		"""
 		return self.joy.getRawButton(9)
 
-	def pov(self):
-		"""Get the state of a POV on the joystick.
-
-		:param pov: which POV (default is 0)
-		:type  pov: int
-		:returns: The angle of the POV in degrees, or -1 if the POV is not
-				  pressed.
+	def dpad(self):
+		"""Get the state of the D-Pad
+		:returns: The angle of the D-Pad in degrees, or -1 if the D-Pad is not pressed.
 		:rtype: float
 		"""
-		return self.joy.getPOV(0)
+		return self.joy.getPOV()
 
 	def right_x(self):
 		"""Get the right stick X axis
