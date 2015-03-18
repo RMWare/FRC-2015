@@ -103,14 +103,14 @@ class Drive(Component):
 
 	def turn_gyro(self, setpoint):
 		# gyro is continuous
-		result = 0.6 * max(-1, min(1, self.gyro_error(setpoint)))
+		result = self.gyro_error(setpoint) / 60
 
 		self.left_pwm = result
 		self.right_pwm = -result
 
 	def drive_gyro(self, setpoint, speed):
-		angle = self.gyro_error(setpoint)
-		self.cheesy_drive(angle * 0.1, speed, False)
+		error = self.gyro_error(setpoint)
+		self.cheesy_drive(error / 60, speed, False)
 
 	def at_goal(self, setpoint):
 		return abs(self.gyro_error(setpoint)) < self.gyro_tolerance

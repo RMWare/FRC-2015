@@ -19,7 +19,7 @@ class Elevator(Component):
 	HOLD_POSITION = 10
 	DROP_POSITION = 0
 	STACK_POSITION = 19
-	STACK_BOTTOM_POSITION = 0.8
+	STACK_BOTTOM_POSITION = 0
 
 	def __init__(self):
 		super().__init__()
@@ -40,8 +40,6 @@ class Elevator(Component):
 		self._goal = 0
 		self._error = 0
 
-		self._max_position = float('inf')
-
 		self._should_intake = False
 		self._should_release_bin = False
 		self._force_stack = False  # makes the elevator stack even with nothing inside
@@ -51,7 +49,7 @@ class Elevator(Component):
 			('elevator position', self._position_encoder.getDistance),
 			('hall effect', self._zeroing_magnet.get),
 			('photo sensor', self._intake_photosensor.get),
-			"_zeroed", "_ready_to_zero", "_max_position",
+			"_zeroed", "_ready_to_zero", "_error",
 			('at setpoint', self.at_goal)
 		])
 
@@ -63,34 +61,28 @@ class Elevator(Component):
 		# Zeroing the elevator. Should only need to happen once.
 		if not self._zeroed:
 			if not self._ready_to_zero:
-				self._motor.set(-.2)  # move the elevator down
+				self._motor.set(-.3)  # move the elevator down
 				if not self._zeroing_magnet.get():  # until we've reached the hall effect sensor
 					self._ready_to_zero = True
 			else:  # ready to zero!
 				# goes up until the elevator is raised off the hall effect.
-				self._motor.set(.2)  # go up
+				self._motor.set(.3)  # go up
 				if self._zeroing_magnet.get():  # until we're raised off the hall effect
 					self.reset_encoder()  # then reset_encoder our encoder
 					self._zeroed = True
 			return
 
-		# Making sure our elevator doesn't crash into the top lol
-		# TODO MAKE sURE THis is ENABLED
-		if False: # self._stabilizer_photosensor.get():  # If our passive elevator is too high
-			self._max_position = self.position() - 0.5  # limit our height
-			self.set_goal(self.position())
-		else:
-			self._max_position = float('inf')
-
 		# Stacking logic
-		if self.at_goal():
-			if self._goal == self.STACK_POSITION:
-				if self.has_tote() or self._force_stack:
+		if self.at_goal() and self._should_intake:
+			if self._goal == self.STACK_POSITION:  # If we're waiting for a tote
+				# TODO enable this                       vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+				if self.has_tote() or self._force_stack: # and not self._stabilizer_photosensor.get():
+					# The elevator won't stack if it's already at its max position.
 					self.set_goal(self.STACK_BOTTOM_POSITION)
 				else:
-					self._should_intake = False
 					self.set_goal(self.STACK_POSITION)
 			else:
+				self._should_intake = False
 				self.set_goal(self.STACK_POSITION)
 
 		self._error = self._goal - self.position()
@@ -100,7 +92,7 @@ class Elevator(Component):
 		self._should_release_bin = False
 
 	def set_goal(self, goal):  # translates levels 0-6 into encoder value
-		self._goal = min(max(0, goal), self._max_position)  # failsafe!
+		self._goal = max(0, goal)  # failsafe!
 		self._follower.set_goal(goal)
 
 	def reset_encoder(self):
