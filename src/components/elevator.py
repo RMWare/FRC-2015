@@ -20,7 +20,7 @@ class Elevator(Component):
 	DROP_POSITION = 0
 	STACK_POSITION = 18
 	STACK_BOTTOM_POSITION = 0
-	HUMAN_LOADING_OFFSET = 10
+	HUMAN_LOADING_OFFSET = 13
 
 	def __init__(self):
 		super().__init__()
@@ -46,7 +46,7 @@ class Elevator(Component):
 		self._prevent_stacking = False  # If true, the elevator will not stack.
 		self._human_loading = False  # Makes the elevator stack 1 higher than usual & not use photosensor
 
-		quickdebug.add_tunables(self, ["HOLD_POSITION", "STACK_POSITION", "DROP_POSITION", "STACK_BOTTOM_POSITION"])
+		quickdebug.add_tunables(self, ["HOLD_POSITION", "STACK_POSITION", "DROP_POSITION", "STACK_BOTTOM_POSITION", "HUMAN_LOADING_OFFSET"])
 		quickdebug.add_printables(self, [
 			('elevator position', self._position_encoder.getDistance),
 			('hall effect', self._zeroing_magnet.get),

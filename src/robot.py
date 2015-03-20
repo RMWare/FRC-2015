@@ -64,20 +64,20 @@ class Tachyon(SampleRobot):
 			wheel = util.deadband(self.chandler.right_x() * .6, .15)
 			throttle = -util.deadband(self.chandler.left_y(), .15)
 
-			# Main stacking
-			# logic follows
+			self.intake.spin(0)  # Default no spinnerino pls
+
+			# Main stacking logic follows
 			if self.meet.a():  # If we have 5 totes in the robot, as seen by our operator
 				self.elevator.prevent_stacking()  # Don't pick up the last tote
 				if self.chandler.right_trigger():  # If we're trying to intake
-					self.intake.spin(1)  # Keep spinning
-				else:
-					self.intake.spin(0)  # Leave it trapped by the intakes for driving
+					if not self.elevator.has_tote():
+						self.intake.spin(1)  # Keep spinning
 			elif self.chandler.right_trigger():  # Stacking mode
 				# Intake, force pickup without photosensor if A button is held
 				self.elevator.stack(force_stack=self.chandler.a(), human_loading=self.meet.left_trigger())
-				self.intake.spin(1)  # And run the intakes inwards
+				if not self.meet.left_trigger():
+					self.intake.spin(1)  # And run the intakes inwards
 			else:  # If we're just driving around
-				self.intake.spin(0)  # Turn the intakes off
 				self.elevator.set_goal(self.elevator.HOLD_POSITION)  # Holding height for the totes
 
 			if self.meet.b():  # Drops the passive elevator around the bin.
@@ -97,7 +97,7 @@ class Tachyon(SampleRobot):
 			else:
 				self.drive.cheesy_drive(wheel, throttle * 0.9, self.chandler.left_bumper())
 
-			if self.chandler.b():  # Emergency something button
+			if self.meet.right_trigger():  # Emergency something button
 				self.elevator.set_goal(30)
 
 			if self.chandler.x():  # outtake??
