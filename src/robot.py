@@ -70,13 +70,14 @@ class Tachyon(SampleRobot):
 			if self.meet.a():  # If we have 5 totes in the robot, as seen by our operator
 				self.elevator.prevent_stacking()  # Don't pick up the last tote
 				if self.chandler.right_trigger():  # If we're trying to intake
-					if not self.elevator.has_tote():
-						self.intake.spin(1)  # Keep spinning
+					self.intake.spin(1)  # Keep spinning
 			elif self.chandler.right_trigger():  # Stacking mode
 				# Intake, force pickup without photosensor if A button is held
-				self.elevator.stack(force_stack=self.chandler.a(), human_loading=self.meet.left_trigger())
-				if not self.meet.left_trigger():
-					self.intake.spin(1)  # And run the intakes inwards
+				self.elevator.stack(force_stack=self.chandler.a())
+				if self.meet.left_trigger():
+					self.intake.spin(.75)  # And run the intakes inwards
+				else:
+					self.intake.spin(1)
 			else:  # If we're just driving around
 				self.elevator.set_goal(self.elevator.HOLD_POSITION)  # Holding height for the totes
 

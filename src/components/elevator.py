@@ -20,7 +20,8 @@ class Elevator(Component):
 	DROP_POSITION = 0
 	STACK_POSITION = 18
 	STACK_BOTTOM_POSITION = 0
-	HUMAN_LOADING_OFFSET = 13
+	HUMAN_LOADING_BOTTOM = 12
+	HUMAN_LOADING_STACK = 34
 
 	def __init__(self):
 		super().__init__()
@@ -34,7 +35,7 @@ class Elevator(Component):
 
 		self._follower = TrajectoryFollower()
 
-		self._zeroed = False
+		self._zeroed = True  # wowee TODO is dis gud idea
 		self._ready_to_zero = False
 
 		self.goal = 0
@@ -46,7 +47,9 @@ class Elevator(Component):
 		self._prevent_stacking = False  # If true, the elevator will not stack.
 		self._human_loading = False  # Makes the elevator stack 1 higher than usual & not use photosensor
 
-		quickdebug.add_tunables(self, ["HOLD_POSITION", "STACK_POSITION", "DROP_POSITION", "STACK_BOTTOM_POSITION", "HUMAN_LOADING_OFFSET"])
+		quickdebug.add_tunables(self, ["HOLD_POSITION", "STACK_POSITION",
+		                               "DROP_POSITION", "STACK_BOTTOM_POSITION",
+		                               "HUMAN_LOADING_BOTTOM", "HUMAN_LOADING_STACK"])
 		quickdebug.add_printables(self, [
 			('elevator position', self._position_encoder.getDistance),
 			('hall effect', self._zeroing_magnet.get),
@@ -76,12 +79,12 @@ class Elevator(Component):
 		# Stacking logic
 		if self.at_goal() and self._should_stack:  # runs every time we hit setpoint in stacking mode
 			if self._human_loading:  # From the tote chute
-				if self.goal == self.STACK_POSITION + self.HUMAN_LOADING_OFFSET:  # If we're waiting for a tote
+				if self.goal == self.HUMAN_LOADING_STACK:  # If we're waiting for a tote
 					if not self._prevent_stacking and self._force_stack:  # And the button is pressed
-						self.set_goal(self.STACK_BOTTOM_POSITION + self.HUMAN_LOADING_OFFSET)  # Go down
+						self.set_goal(self.HUMAN_LOADING_BOTTOM)  # Go down
 				else:
 					self._should_stack = False  # Reset this so we don't stack forever
-					self.set_goal(self.STACK_POSITION + self.HUMAN_LOADING_OFFSET)  # And go back up
+					self.set_goal(self.HUMAN_LOADING_STACK)  # And go back up
 			else:  # If we're not human loading
 				if self.goal == self.STACK_POSITION:  # and we're waiting for a tote
 					if (self.has_tote() or self._force_stack) and not self._prevent_stacking:  # If we have a tote
