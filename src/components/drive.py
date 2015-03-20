@@ -22,9 +22,9 @@ class Drive(Component):
 	def __init__(self):
 		super().__init__()
 
-		self.l_motor = SyncGroup(Talon, constants.motors.drive_left)
-		self.r_motor = SyncGroup(Talon, constants.motors.drive_right)
-		self.gyro = Gyro(constants.sensors.gyro)
+		self.l_motor = SyncGroup(Talon, constants.motor_drive_l)
+		self.r_motor = SyncGroup(Talon, constants.motor_drive_r)
+		self.gyro = Gyro(constants.gyro)
 		# self.gyro = AnalogInput(constants.sensors.gyro)
 		quickdebug.add_printables(self, ('error', self.gyro.getAngle))
 

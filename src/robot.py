@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 from common.xbox import XboxController
 from wpilib import SampleRobot, Timer, SmartDashboard, LiveWindow, run
-from components import drive, intake, pneumatics, elevator
+
+from components.drive import Drive
+from components.intake import Intake
+from components.pneumatics import Pneumatics
+from components.elevator import Elevator
 from common import delay, util, quickdebug
 from robotpy_ext.autonomous import AutonomousModeSelector
 import logging
@@ -20,11 +24,12 @@ class Tachyon(SampleRobot):
 	# noinspection PyAttributeOutsideInit
 	# because robotInit is called straight from __init__
 	def robotInit(self):
-		self.xbox = XboxController(0)
-		self.drive = drive.Drive()
-		self.pneumatics = pneumatics.Pneumatics()
-		self.intake = intake.Intake()
-		self.elevator = elevator.Elevator()
+		self.chandler = XboxController(0)
+		self.meet = XboxController(1)
+		self.drive = Drive()
+		self.pneumatics = Pneumatics()
+		self.intake = Intake()
+		self.elevator = Elevator()
 
 		self.components = {
 			'drive': self.drive,
@@ -56,38 +61,47 @@ class Tachyon(SampleRobot):
 			self.intake.close()
 
 			# Driving
-			wheel = util.deadband(self.xbox.right_x() * .6, .15)
-			throttle = -util.deadband(self.xbox.left_y(), .15)
+			wheel = util.deadband(self.chandler.right_x() * .6, .15)
+			throttle = -util.deadband(self.chandler.left_y(), .15)
 
-			# Main stacking logic follows
-			if self.xbox.right_trigger():
-				self.elevator.intake(force_pickup=self.xbox.a())
-				self.intake.spin(1)
-			else:
-				self.intake.spin(0)
-				self.elevator.set_goal(self.elevator.HOLD_POSITION)  # default hold
+			# Main stacking
+			# logic follows
+			if self.meet.a():  # If we have 5 totes in the robot, as seen by our operator
+				self.elevator.prevent_stacking()  # Don't pick up the last tote
+				if self.chandler.right_trigger():  # If we're trying to intake
+					self.intake.spin(1)  # Keep spinning
+				else:
+					self.intake.spin(0)  # Leave it trapped by the intakes for driving
+			elif self.chandler.right_trigger():  # Stacking mode
+				# Intake, force pickup without photosensor if A button is held
+				self.elevator.stack(force_stack=self.chandler.a(), human_loading=self.meet.left_trigger())
+				self.intake.spin(1)  # And run the intakes inwards
+			else:  # If we're just driving around
+				self.intake.spin(0)  # Turn the intakes off
+				self.elevator.set_goal(self.elevator.HOLD_POSITION)  # Holding height for the totes
 
-			if self.xbox.left_trigger():
-				self.elevator.set_goal(self.elevator.DROP_POSITION)  # release_bin totes
-				self.intake.open()
+			if self.meet.b():  # Drops the passive elevator around the bin.
 				self.elevator.release_bin()
 
-			if self.xbox.right_bumper():
-				self.intake.open()  # yee
+			if self.chandler.left_trigger():  # If we're trying to drop the stack
+				self.elevator.set_goal(self.elevator.DROP_POSITION)
+				self.intake.open()
+				# if self.elevator.goal == self.elevator.DROP_POSITION and self.elevator.at_goal():
+				self.elevator.release_bin()  # Drops the passive
 
-			if self.xbox.right_pressed():  # slow down
-				self.drive.cheesy_drive(wheel, throttle * 0.4, self.xbox.left_bumper())
+			if self.chandler.right_bumper():  # Open & close intakes (while stacking, usually)
+				self.intake.open()
+
+			if self.chandler.right_pressed():  # Slow down?
+				self.drive.cheesy_drive(wheel, throttle * 0.4, self.chandler.left_bumper())
 			else:
-				self.drive.cheesy_drive(wheel, throttle * 0.8, self.xbox.left_bumper())
+				self.drive.cheesy_drive(wheel, throttle * 0.9, self.chandler.left_bumper())
 
-			if self.xbox.b():
+			if self.chandler.b():  # Emergency something button
 				self.elevator.set_goal(30)
 
-			if self.xbox.x():
+			if self.chandler.x():  # outtake??
 				self.intake.spin(-1)
-
-			if self.xbox.y():
-				self.intake.spin(1, same_direction=True)
 
 			self.update_networktables()
 			self.update()
@@ -119,4 +133,4 @@ class Tachyon(SampleRobot):
 
 
 if __name__ == "__main__":
-	run(Tachyon, physics_enabled=True)
+	run(Tachyon)

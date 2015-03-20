@@ -33,7 +33,7 @@ class TrajectoryFollower(object):
 		self._kv = .0
 		self._ka = .0
 
-		self._max_acc = 200
+		self._max_acc = 170
 		self._max_vel = 100000000000
 
 		quickdebug.add_tunables(self, ["_kp", "_ki", "_kd", "_kv", "_ka", "_max_acc", "_max_vel"])

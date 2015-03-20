@@ -7,9 +7,9 @@ class Intake(Component):
 	def __init__(self):
 		super().__init__()
 
-		self._l_motor = Talon(constants.motors.intake_l)
-		self._r_motor = Talon(constants.motors.intake_r)
-		self._intake_piston = Solenoid(0, constants.solenoids.intake)
+		self._l_motor = Talon(constants.motor_intake_l)
+		self._r_motor = Talon(constants.motor_intake_r)
+		self._intake_piston = Solenoid(0, constants.solenoid_intake)
 
 		self._left_pwm = 0
 		self._right_pwm = 0

@@ -1,33 +1,20 @@
-# This file is named misleadingly, lol
 
+# Drive
+motor_drive_l = (3, 4)
+motor_drive_r = (5, 6)
 
-class _MotorConstants(object):  # all pins should be different
-	# Drive
-	drive_left = (3, 4)
-	drive_right = (5, 6)
+# Intake
+motor_intake_l = 0
+motor_intake_r = 7
 
-	# Intake
-	intake_l = 0
-	intake_r = 7
+# Elevator
+motor_elevator = (1, 2, 8)
 
-	# Elevator
-	elevator_motor = (1, 2, 8)
+solenoid_intake = 0
+solenoid_dropper = 1
 
-
-class _SolenoidConstants(object):
-	intake = 0
-	dropper = 1
-
-
-class _SensorConstants(object):
-	elevator_encoder_a = 0
-	elevator_encoder_b = 1
-	elevator_hall_effect = 2
-	intake_photosensor = 3
-	stabilizer_photosensor = 4
-	gyro = 0  # analog!
-
-motors = _MotorConstants()
-solenoids = _SolenoidConstants()
-
-sensors = _SensorConstants()
+encoder_a = 0
+encoder_b = 1
+hall_effect = 2
+intake_photosensor = 3
+gyro = 0  # analog!
