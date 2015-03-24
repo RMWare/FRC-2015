@@ -67,7 +67,7 @@ class Tachyon(SampleRobot):
 			if self.chandler.right_trigger():  # Stacking mode
 				self.elevator.stack(force_stack=self.chandler.a())  # force stacking if A button is held
 				self.intake.spin(1)  # Run our wintakes in & try to grab something
-			elif self.chandler.b():
+			elif self.chandler.b():  # TODO figure out what button to map to this
 				self.elevator.stack(force_stack=self.chandler.a(), bin=True)
 				self.intake.spin(0.75)
 			else:  # If we're just driving around
