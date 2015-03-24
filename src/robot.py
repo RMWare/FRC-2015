@@ -66,30 +66,21 @@ class Tachyon(SampleRobot):
 
 			self.intake.spin(0)  # Default no spinnerino pls
 
-			# Main stacking logic follows
-			if self.meet.a():  # If we have 5 totes in the robot, as seen by our operator
-				self.elevator.set_goal(self.elevator.STACK_POSITION)  # Get ready to intake
-				if self.chandler.right_trigger():  # If we're trying to intake
-					self.intake.spin(1)  # Keep spinning
-			elif self.chandler.right_trigger():  # Stacking mode
-				# Intake, force pickup without photosensor if A button is held
-				self.elevator.stack(force_stack=self.chandler.a())
+			if self.chandler.right_trigger():  # Stacking mode
+				self.elevator.stack(force_stack=self.chandler.a())  # force stacking if A button is held
+				self.intake.spin(1)  # Run our wintakes
 			else:  # If we're just driving around
 				self.elevator.set_goal(self.elevator.HOLD_POSITION)  # Holding height for the totes
 
-			if self.meet.b():  # Drops the passive elevator around the bin.
-				self.elevator.release_bin()
-
 			if self.chandler.left_trigger():  # If we're trying to drop the stack
 				self.elevator.set_goal(self.elevator.DROP_POSITION)
-				self.intake.open()
-				# if self.elevator.goal == self.elevator.DROP_POSITION and self.elevator.at_goal():
-				self.elevator.release_bin()  # Drops the passive
+				self.intake.open()  # Open de intakes
+				self.elevator.force_open_stabilizer()  # Drops the passive
 
 			if self.chandler.right_bumper():  # Open & close intakes (while stacking, usually)
 				self.intake.open()
 
-			if self.chandler.right_pressed():  # Slow down?
+			if self.chandler.right_pressed():  # TODO we need a better control for slowing driving down
 				self.drive.cheesy_drive(wheel, throttle * 0.4, self.chandler.left_bumper())
 			else:
 				self.drive.cheesy_drive(wheel, throttle * 0.75, self.chandler.left_bumper())
@@ -97,8 +88,10 @@ class Tachyon(SampleRobot):
 			if self.meet.right_trigger():  # Emergency something button
 				self.elevator.set_goal(30)
 
-			if self.chandler.x():  # outtake??
-				self.intake.spin(-1)
+			if self.meet.b():  # Drops the passive elevator around the bin.
+				self.elevator.force_open_stabilizer()
+
+
 
 			self.update_networktables()
 			self.update()

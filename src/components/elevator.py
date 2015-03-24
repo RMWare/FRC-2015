@@ -41,7 +41,9 @@ class Elevator(Component):
 		self._tote_count = 0  # Keep track of totes!
 		self._has_bin = False  # Do we have a bin?
 		self._should_stack = False
-		self._should_release_bin = False
+		self._should_stack_bin = False
+		self._should_open_stabilizer = False
+		self._should_open_stabilizer_override = False
 		self._force_stack = False  # makes the elevator stack even with nothing inside
 
 		quickdebug.add_tunables(self, ["HOLD_POSITION", "STACK_POSITION", "DROP_POSITION", "STACK_BOTTOM_POSITION"])
@@ -60,21 +62,31 @@ class Elevator(Component):
 		# Stacking logic
 		if self.at_goal():
 			if self._should_stack:  # runs every time we hit setpoint in stacking mode
-					if self.goal == self.STACK_POSITION:  # If we're waiting for a tote
-						if self.has_tote() or self._force_stack:  # If we have a tote
-							# The elevator won't stack if it's already at its max position.
-							self.set_goal(self.STACK_BOTTOM_POSITION)  # Go down
+				if self.goal == self.STACK_POSITION:  # If we're waiting for a tote
+					if self.has_tote() and self._tote_count <= 6:  # If we have a tote or a bin in the robot
+						# The elevator won't stack if it's already at its max position.
+						self.set_goal(self.STACK_BOTTOM_POSITION)  # Go down
+						if self._tote_count == 1 and self._has_bin:
+							self._should_open_stabilizer = True
+				else:  # We're at the bottom, pick whatever we grabbed up
+					if self._should_stack_bin:  # We're stacking a bin
+						self._should_stack_bin = False
+						self._has_bin = True
 					else:
-						self._should_stack = False  # Reset this so we don't keep stacking forever
-						self.set_goal(self.STACK_POSITION)  # And go back up
+						self._tote_count += 1
+						if self._tote_count == 2 and self._has_bin:
+							self._should_open_stabilizer = False
+					self._should_stack = False  # Reset this so we don't keep stacking forever
+					self.set_goal(self.STACK_POSITION)  # And go back up
 
 		self._error = self.goal - self.position()
 		self._motor.set(self._follower.calculate(self.position()))
 
-		self._dropper_piston.set(self._should_release_bin)  # Drop the bin if needed
+		# Opens the stabilizer if needed
+		self._dropper_piston.set(self._should_open_stabilizer or self._should_open_stabilizer_override)
 
 		# And then reset things so we don't do them forever
-		self._should_release_bin = False
+		self._should_open_stabilizer_override = False
 
 	def set_goal(self, goal):  # translates levels 0-6 into encoder value
 		self.goal = max(0, goal)  # this should really never happen at all, should always be > 0
@@ -86,7 +98,7 @@ class Elevator(Component):
 		self._follower._reset = True
 
 	def has_tote(self):
-		return not self._intake_photosensor.get()
+		return not self._intake_photosensor.get() or self._force_stack
 
 	def position(self):
 		return self._position_encoder.getDistance()
@@ -98,5 +110,5 @@ class Elevator(Component):
 		self._should_stack = True
 		self._force_stack = force_stack
 
-	def release_bin(self):
-		self._should_release_bin = True
+	def force_open_stabilizer(self):
+		self._should_open_stabilizer_override = True
