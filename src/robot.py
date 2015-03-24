@@ -62,7 +62,7 @@ class Tachyon(SampleRobot):
 
 			# Driving
 			wheel = util.deadband(self.chandler.right_x(), .2) * .6
-			throttle = -util.deadband(self.chandler.left_y(), .23) * 1.2
+			throttle = -util.deadband(self.chandler.left_y(), .23) * 0.8
 
 			if self.chandler.right_trigger():  # Stacking mode
 				self.elevator.stack(force_stack=self.chandler.a())  # force stacking if A button is held
@@ -82,14 +82,12 @@ class Tachyon(SampleRobot):
 				self.intake.open()
 
 			if self.chandler.right_pressed():  # TODO we need a better control for slowing driving down
-				self.drive.cheesy_drive(wheel, throttle * 0.4, self.chandler.left_bumper())
-			else:
-				self.drive.cheesy_drive(wheel, throttle * 0.75, self.chandler.left_bumper())
+				throttle *= 0.4
+			self.drive.cheesy_drive(wheel, throttle * 0.75, self.chandler.left_bumper())
 
 			# Meetkumar's operator controls
-			# TODO Manual overrides! You'll probably have to modify the elevator class for this.
 			if self.meet.right_trigger():  # Emergency something button
-				self.elevator.set_goal(30)
+				self.elevator.set_goal(self.elevator)
 
 			self.update_networktables()
 			self.update()
