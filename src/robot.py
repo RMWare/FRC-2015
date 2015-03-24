@@ -67,7 +67,6 @@ class Tachyon(SampleRobot):
 			if self.chandler.right_trigger():  # Stacking mode
 				self.elevator.stack(force_stack=self.chandler.a())  # force stacking if A button is held
 				self.intake.spin(1)  # Run our wintakes in & try to grab something
-
 			elif self.chandler.b():
 				self.elevator.stack(force_stack=self.chandler.a(), bin=True)
 				self.intake.spin(0.75)
@@ -76,9 +75,8 @@ class Tachyon(SampleRobot):
 				self.elevator.set_goal(self.elevator.HOLD_POSITION)  # Holding height for the totes
 
 			if self.chandler.left_trigger():  # If we're trying to drop the stack
-				self.elevator.set_goal(self.elevator.DROP_POSITION)
 				self.intake.open()  # Open de intakes
-				self.elevator.force_open_stabilizer()  # Drops the passive
+				self.elevator.drop_stack()  # Drops the passive
 
 			if self.chandler.right_bumper():  # Open & close intakes (while stacking, usually)
 				self.intake.open()
@@ -94,7 +92,7 @@ class Tachyon(SampleRobot):
 				self.elevator.set_goal(30)
 
 			if self.meet.b():  # Drops the passive elevator around the bin.
-				self.elevator.force_open_stabilizer()
+				self.elevator.drop_stack()
 
 
 

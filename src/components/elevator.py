@@ -111,5 +111,8 @@ class Elevator(Component):
 		self._force_stack = force_stack
 		self._should_stack_bin = bin
 
-	def force_open_stabilizer(self):
+	def drop_stack(self):
+		self.set_goal(self.DROP_POSITION)
 		self._should_open_stabilizer_override = True
+		self._tote_count = 0
+		self._has_bin = False
