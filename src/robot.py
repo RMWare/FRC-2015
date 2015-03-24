@@ -91,11 +91,6 @@ class Tachyon(SampleRobot):
 			if self.meet.right_trigger():  # Emergency something button
 				self.elevator.set_goal(30)
 
-			if self.meet.b():  # Drops the passive elevator around the bin.
-				self.elevator.drop_stack()
-
-
-
 			self.update_networktables()
 			self.update()
 
