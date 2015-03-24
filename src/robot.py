@@ -61,23 +61,19 @@ class Tachyon(SampleRobot):
 			self.intake.close()
 
 			# Driving
-			wheel = util.deadband(self.chandler.right_x() * .6, .15)
-			throttle = -util.deadband(self.chandler.left_y(), .15)
+			wheel = util.deadband(self.chandler.right_x(), .2) * .6
+			throttle = -util.deadband(self.chandler.left_y(), .23) * 1.2
 
 			self.intake.spin(0)  # Default no spinnerino pls
 
 			# Main stacking logic follows
 			if self.meet.a():  # If we have 5 totes in the robot, as seen by our operator
-				self.elevator.prevent_stacking()  # Don't pick up the last tote
+				self.elevator.set_goal(self.elevator.STACK_POSITION)  # Get ready to intake
 				if self.chandler.right_trigger():  # If we're trying to intake
 					self.intake.spin(1)  # Keep spinning
 			elif self.chandler.right_trigger():  # Stacking mode
 				# Intake, force pickup without photosensor if A button is held
 				self.elevator.stack(force_stack=self.chandler.a())
-				if self.meet.left_trigger():
-					self.intake.spin(.75)  # And run the intakes inwards
-				else:
-					self.intake.spin(1)
 			else:  # If we're just driving around
 				self.elevator.set_goal(self.elevator.HOLD_POSITION)  # Holding height for the totes
 
@@ -96,7 +92,7 @@ class Tachyon(SampleRobot):
 			if self.chandler.right_pressed():  # Slow down?
 				self.drive.cheesy_drive(wheel, throttle * 0.4, self.chandler.left_bumper())
 			else:
-				self.drive.cheesy_drive(wheel, throttle * 0.9, self.chandler.left_bumper())
+				self.drive.cheesy_drive(wheel, throttle * 0.75, self.chandler.left_bumper())
 
 			if self.meet.right_trigger():  # Emergency something button
 				self.elevator.set_goal(30)
