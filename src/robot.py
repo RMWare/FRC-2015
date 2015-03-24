@@ -64,12 +64,15 @@ class Tachyon(SampleRobot):
 			wheel = util.deadband(self.chandler.right_x(), .2) * .6
 			throttle = -util.deadband(self.chandler.left_y(), .23) * 1.2
 
-			self.intake.spin(0)  # Default no spinnerino pls
-
 			if self.chandler.right_trigger():  # Stacking mode
 				self.elevator.stack(force_stack=self.chandler.a())  # force stacking if A button is held
-				self.intake.spin(1)  # Run our wintakes
+				self.intake.spin(1)  # Run our wintakes in & try to grab something
+
+			elif self.chandler.b():
+				self.elevator.stack(force_stack=self.chandler.a(), bin=True)
+				self.intake.spin(0.75)
 			else:  # If we're just driving around
+				self.intake.spin(0)  # Default no spinnerino pls
 				self.elevator.set_goal(self.elevator.HOLD_POSITION)  # Holding height for the totes
 
 			if self.chandler.left_trigger():  # If we're trying to drop the stack
@@ -85,6 +88,8 @@ class Tachyon(SampleRobot):
 			else:
 				self.drive.cheesy_drive(wheel, throttle * 0.75, self.chandler.left_bumper())
 
+			# Meetkumar's operator controls
+			# TODO Manual overrides! You'll probably have to modify the elevator class for this.
 			if self.meet.right_trigger():  # Emergency something button
 				self.elevator.set_goal(30)
 

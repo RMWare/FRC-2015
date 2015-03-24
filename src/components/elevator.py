@@ -106,9 +106,10 @@ class Elevator(Component):
 	def at_goal(self):
 		return self._follower.trajectory_finished()  # and abs(self._error) < self.ON_TARGET_DELTA
 
-	def stack(self, force_stack=False):
+	def stack(self, force_stack=False, bin=False):
 		self._should_stack = True
 		self._force_stack = force_stack
+		self._should_stack_bin = bin
 
 	def force_open_stabilizer(self):
 		self._should_open_stabilizer_override = True
