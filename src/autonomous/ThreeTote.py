@@ -11,12 +11,17 @@ class ThreeTote(StatefulAutonomous):
 
 	angle, speed, quickturn, drop = 0, 0, False, False
 
+	desired_distance = 0
+	start_distance = 0
 	spin_direction = -1
 
 	def initialize(self):
 		self.drive.reset_gyro()
 
 	def on_iteration(self, tm):
+		if abs(self.start_distance - self.desired_distance) > 0:
+			self.drive.drive_encoder()
+
 		if not self.quickturn:
 			# self.drive.drive_gyro(self.angle, self.speed)
 			self.drive.tank_drive(self.speed, self.speed)

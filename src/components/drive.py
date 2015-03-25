@@ -1,6 +1,6 @@
 import logging
 import math
-from wpilib import Talon, Gyro
+from wpilib import Talon, Gyro, Encoder
 from common import util, constants, quickdebug
 from common.syncgroup import SyncGroup
 from . import Component
@@ -17,16 +17,31 @@ class Drive(Component):
 	quickstop_accumulator = 0
 	old_wheel = 0
 	sensitivity = 1.5
+
+	# Gyro & encoder stuff
 	gyro_tolerance = 5
+
+	start_distance_l = 0
+	start_distance_r = 0
+	desired_distance = 0
 
 	def __init__(self):
 		super().__init__()
 
 		self.l_motor = SyncGroup(Talon, constants.motor_drive_l)
 		self.r_motor = SyncGroup(Talon, constants.motor_drive_r)
+
+		self.l_encoder = Encoder(*constants.encoder_drive_l)
+		self.r_encoder = Encoder(*constants.encoder_drive_r)
+
+		DISTANCE_PER_REV = 4 * math.pi
+		TICKS_PER_REV = 128
+		REDUCTION = 30 / 36
+
+		self.l_encoder.setDistancePerPulse((DISTANCE_PER_REV * REDUCTION) / TICKS_PER_REV)
+
 		self.gyro = Gyro(constants.gyro)
-		# self.gyro = AnalogInput(constants.sensors.gyro)
-		quickdebug.add_printables(self, ('error', self.gyro.getAngle))
+		quickdebug.add_printables(self, ('gyro angle', self.gyro.getAngle))
 
 	def update(self):
 		self.l_motor.set(self.left_pwm)
@@ -111,6 +126,18 @@ class Drive(Component):
 	def drive_gyro(self, setpoint, speed):
 		error = self.gyro_error(setpoint)
 		self.cheesy_drive(error / 60, speed, False)
+
+	def set_drive_distance(self, distance):
+		self.start_distance_l = self.l_encoder.getDistance()
+		self.start_distance_r = self.r_encoder.getDistance()
+		self.desired_distance = distance
+
+	def drive_distance(self):
+		l_error = self.start_distance_l + self.desired_distance - self.l_encoder.getDistance()
+		r_error = self.start_distance_r + self.desired_distance - self.r_encoder.getDistance()
+
+		self.left_pwm = l_error
+		self.right_pwm = r_error
 
 	def at_goal(self, setpoint):
 		return abs(self.gyro_error(setpoint)) < self.gyro_tolerance

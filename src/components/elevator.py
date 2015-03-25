@@ -24,7 +24,7 @@ class Elevator(Component):
 	def __init__(self):
 		super().__init__()
 		self._motor = SyncGroup(Talon, constants.motor_elevator)
-		self._position_encoder = Encoder(constants.encoder_a, constants.encoder_b, True)
+		self._position_encoder = Encoder(*constants.encoder_elevator)
 		self._zeroing_magnet = DigitalInput(constants.hall_effect)
 		self._intake_photosensor = DigitalInput(constants.intake_photosensor)
 		self._dropper_piston = Solenoid(constants.solenoid_dropper)
