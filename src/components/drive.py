@@ -139,7 +139,7 @@ class Drive(Component):
 		self.left_pwm = l_error
 		self.right_pwm = r_error
 
-	def at_goal(self, setpoint):
+	def at_gyro_goal(self, setpoint):
 		return abs(self.gyro_error(setpoint)) < self.gyro_tolerance
 
 	def gyro_error(self, setpoint=0):

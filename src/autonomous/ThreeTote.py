@@ -90,7 +90,7 @@ class ThreeTote(StatefulAutonomous):
 	@state()
 	def turn_right(self):
 		self.quickturn = True
-		if self.drive.at_goal(self.angle):
+		if self.drive.at_gyro_goal(self.angle):
 			self.next_state('drive_towards_zone')
 		else:
 			self.next_state('turn_right')
