@@ -119,23 +119,27 @@ class Drive(Component):
 		self.left_pwm = math.copysign(math.pow(left, 2), left)
 		self.right_pwm = math.copysign(math.pow(right, 2), right)
 
+	# Stuff for encoder driving
 	def set_encoder_goal(self, goal):
 		self.start_distance_l = self.l_encoder.getDistance()
 		self.start_distance_r = self.r_encoder.getDistance()
 		self.encoder_goal = goal
 
 	def drive_encoder(self):
+		lim = 0.5  # 50% MAX SPEED
 		l_error = self.start_distance_l + self.encoder_goal - self.l_encoder.getDistance()
 		r_error = self.start_distance_r + self.encoder_goal - self.r_encoder.getDistance()
 
-		self.left_pwm = l_error
-		self.right_pwm = r_error
+		self.left_pwm = util.limit(l_error, lim)
+		self.right_pwm = util.limit(r_error, lim)
 
 	def at_encoder_goal(self):
 		l_error = self.start_distance_l + self.encoder_goal - self.l_encoder.getDistance()
 		r_error = self.start_distance_r + self.encoder_goal - self.r_encoder.getDistance()
 		return l_error < self.encoder_tolerance and r_error < self.encoder_tolerance
 
+
+	# Stuff for Gyro driving
 	def set_gyro_goal(self, goal):
 		self.gyro_goal = goal
 
@@ -148,5 +152,10 @@ class Drive(Component):
 		return abs(self.gyro_error()) < self.gyro_tolerance
 
 	def gyro_error(self):
-		e = self.gyro_goal - self.gyro.getAngle()
-		return e - 360 * round(e / 360)
+		"""
+		Returns gyro error wrapped from -180 to 180
+		:return:
+		"""
+		raw_error = self.gyro_goal - self.gyro.getAngle()
+		wrapped_error = raw_error - 360 * round(raw_error / 360)
+		return wrapped_error
