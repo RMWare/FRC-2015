@@ -101,4 +101,4 @@ class ThreeTote(StatefulAutonomous):
 
 	@state()
 	def stop(self):
-		self.speed = 0
+		self.
