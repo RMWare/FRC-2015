@@ -6,7 +6,7 @@ def deadband(val, dead):
 	"""
 	:param val: value to apply deadband to
 	:param dead: deadband value
-	:return: 0 if deadbanded, otherwise val
+	:return: 0 if value < dead, else val
 	"""
 	return val if abs(val) > abs(dead) else 0
 

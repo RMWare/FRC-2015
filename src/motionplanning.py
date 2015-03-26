@@ -5,7 +5,7 @@ from common import quickdebug
 
 class TrajectoryFollower(object):
 	"""
-	PID + Feedforward controller for following a Trajectory.
+	PID + feed-forward controller for following a Trajectory.
 	Originally written by Jared341 in Java
 	Heavily modified.
 	"""
@@ -82,7 +82,7 @@ class TrajectoryFollower(object):
 			t_start = (cruise_vel - cur_vel) / self._max_acc
 			x_start = cur_vel * t_start + .5 * self._max_acc * t_start * t_start
 
-			# Deccelerate to zero velocity
+			# Decelerate to zero velocity
 			t_end = abs(cruise_vel / self._max_acc)
 			x_end = cruise_vel * t_end - .5 * self._max_acc * t_end * t_end
 			x_cruise = max(0, distance_to_go - x_start - x_end)

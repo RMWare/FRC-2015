@@ -67,21 +67,21 @@ class Drive(Component):
 			:param quickturn: If the robot should drive arcade-drive style
 		"""
 
-		neg_intertia = wheel - self.old_wheel
+		neg_inertia = wheel - self.old_wheel
 		self.old_wheel = wheel
 		wheel = util.sin_scale(wheel, 0.8, passes=3)
 
-		if wheel * neg_intertia > 0:
-			neg_intertia_scalar = 2.5
+		if wheel * neg_inertia > 0:
+			neg_inertia_scalar = 2.5
 		else:
 			if abs(wheel) > .65:
-				neg_intertia_scalar = 5
+				neg_inertia_scalar = 5
 			else:
-				neg_intertia_scalar = 3
+				neg_inertia_scalar = 3
 
-		neg_intertia_accumulator = neg_intertia * neg_intertia_scalar
+		neg_inertia_accumulator = neg_inertia * neg_inertia_scalar
 
-		wheel += neg_intertia_accumulator
+		wheel += neg_inertia_accumulator
 
 		if quickturn:
 			if abs(throttle) < 0.2:

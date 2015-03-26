@@ -40,12 +40,12 @@ class Tachyon(SampleRobot):
 
 		self.nt_timer = Timer()  # timer for SmartDashboard update so we don't use all our bandwidth
 		self.nt_timer.start()
-		self.automodes = AutonomousModeSelector('autonomous', self.components)
+		self.autonomous_modes = AutonomousModeSelector('autonomous', self.components)
 		quickdebug.init()
 
 	def autonomous(self):
 		SmartDashboard.putNumber('RobotMode', MODE_AUTONOMOUS)
-		self.automodes.run(CONTROL_LOOP_WAIT_TIME, iter_fn=self.update)
+		self.autonomous_modes.run(CONTROL_LOOP_WAIT_TIME, iter_fn=self.update)
 		Timer.delay(CONTROL_LOOP_WAIT_TIME)
 
 	def disabled(self):
