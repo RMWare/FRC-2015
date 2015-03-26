@@ -15,7 +15,7 @@ motor_elevator = 1, 2, 8
 solenoid_intake = 0
 solenoid_dropper = 1
 
-encoder_elevator = 0, 1, True  # The true reverses the encoder.
+encoder_elevator = 0, 1, True  # 'True' sets the encoder to be reversed
 
 intake_photosensor = 3
 gyro = 0  # analog!

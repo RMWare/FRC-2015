@@ -9,21 +9,24 @@ class ThreeTote(StatefulAutonomous):
 	MODE_NAME = 'Three totes in auto zone'
 	DEFAULT = True
 
-	angle, speed, quickturn, drop = 0, 0, False, False
+	drop = False
+	turn = False
 
-	desired_distance = 0
-	start_distance = 0
 	spin_direction = -1
+	at_goal_state = ''
 
 	def on_iteration(self, tm):
-		if abs(self.start_distance - self.desired_distance) > 0:
-			self.drive.drive_encoder()
-
-		if not self.quickturn:
-			# self.drive.drive_gyro(self.angle, self.speed)
-			self.drive.tank_drive(self.speed, self.speed)
+		if self.turn:
+			if self.drive.at_gyro_goal():
+				self.next_state(self.at_goal_state)
+			else:
+				self.drive.turn_gyro()
 		else:
-			self.drive.turn_gyro(self.angle)
+			if self.drive.at_encoder_goal():
+				self.next_state(self.at_goal_state)
+			else:
+				self.drive.drive_encoder()
+
 		if self.drop:
 			self.elevator.drop_stack()
 		super(ThreeTote, self).on_iteration(tm)
@@ -32,7 +35,6 @@ class ThreeTote(StatefulAutonomous):
 	def tote1(self):
 		self.elevator.stack()
 		self.intake.spin(1)  # intake
-		self.speed = 0.3
 
 	@timed_state(duration=1, next_state='bin12')
 	def bin1(self):
@@ -81,29 +83,21 @@ class ThreeTote(StatefulAutonomous):
 
 	@state()
 	def prep_turn(self):
-		self.angle += 90
-		self.next_state('turn_right')
-
-	@state()
-	def turn_right(self):
-		self.quickturn = True
-		if self.drive.at_gyro_goal(self.angle):
-			self.next_state('drive_towards_zone')
-		else:
-			self.next_state('turn_right')
+		self.drive.set_gyro_goal(90)
+		self.turn = True
+		self.at_goal_state = 'drive_towards_zone'
 
 	@timed_state(duration=1.25, next_state='leave')
 	def drive_towards_zone(self):
+		self.turn = False
 		self.intake.spin(0)
-		self.quickturn = False
-		self.speed = .3
+		self.drive.set_encoder_goal(4 * 12)
 
 	@timed_state(duration=1.25, next_state='stop')
 	def leave(self):
 		self.intake.open()
 		self.elevator.set_goal(self.elevator.DROP_POSITION)
 		self.drop = True
-		self.speed = -.3
 
 	@state()
 	def stop(self):

@@ -19,11 +19,14 @@ class Drive(Component):
 	sensitivity = 1.5
 
 	# Gyro & encoder stuff
-	gyro_tolerance = 5
+	gyro_goal = 0
+	gyro_tolerance = 5  # Degrees
+
+	encoder_goal = 0
+	encoder_tolerance = 1  # Inches
 
 	start_distance_l = 0
 	start_distance_r = 0
-	desired_distance = 0
 
 	def __init__(self):
 		super().__init__()
@@ -116,32 +119,34 @@ class Drive(Component):
 		self.left_pwm = math.copysign(math.pow(left, 2), left)
 		self.right_pwm = math.copysign(math.pow(right, 2), right)
 
-	def turn_gyro(self, setpoint):
-		# gyro is continuous
-		result = self.gyro_error(setpoint) / 60
-
-		self.left_pwm = result
-		self.right_pwm = -result
-
-	def drive_gyro(self, setpoint, speed):
-		error = self.gyro_error(setpoint)
-		self.cheesy_drive(error / 60, speed, False)
-
-	def set_drive_distance(self, distance):
+	def set_encoder_goal(self, goal):
 		self.start_distance_l = self.l_encoder.getDistance()
 		self.start_distance_r = self.r_encoder.getDistance()
-		self.desired_distance = distance
+		self.encoder_goal = goal
 
-	def drive_distance(self):
-		l_error = self.start_distance_l + self.desired_distance - self.l_encoder.getDistance()
-		r_error = self.start_distance_r + self.desired_distance - self.r_encoder.getDistance()
+	def drive_encoder(self):
+		l_error = self.start_distance_l + self.encoder_goal - self.l_encoder.getDistance()
+		r_error = self.start_distance_r + self.encoder_goal - self.r_encoder.getDistance()
 
 		self.left_pwm = l_error
 		self.right_pwm = r_error
 
-	def at_gyro_goal(self, setpoint):
-		return abs(self.gyro_error(setpoint)) < self.gyro_tolerance
+	def at_encoder_goal(self):
+		l_error = self.start_distance_l + self.encoder_goal - self.l_encoder.getDistance()
+		r_error = self.start_distance_r + self.encoder_goal - self.r_encoder.getDistance()
+		return l_error < self.encoder_tolerance and r_error < self.encoder_tolerance
 
-	def gyro_error(self, setpoint=0):
-		e = setpoint - self.gyro.getAngle()
+	def set_gyro_goal(self, goal):
+		self.gyro_goal = goal
+
+	def turn_gyro(self):
+		result = self.gyro_error() / 60
+		self.left_pwm = result
+		self.right_pwm = -result
+
+	def at_gyro_goal(self):
+		return abs(self.gyro_error()) < self.gyro_tolerance
+
+	def gyro_error(self):
+		e = self.gyro_goal - self.gyro.getAngle()
 		return e - 360 * round(e / 360)
