@@ -3,30 +3,36 @@ from robotpy_ext.autonomous import StatefulAutonomous, state, timed_state
 ## noinspect on PyUnresolvedReferences
 # Because python is dynamic and can do crazy crap, some IDEs complain that the subsystems
 # aren't accessible in this object. They are, and the above comment fixes it for IntelliJ IDEA
+from common.util import AutoNumberEnum
 
+class DriveMode(AutoNumberEnum):
+	stop = ()
+	turn = ()
+	drive = ()
 
 class ThreeTote(StatefulAutonomous):
 	MODE_NAME = 'Three totes in auto zone'
 	DEFAULT = True
 
 	drop = False
-	turn = False
+	drive_mode = DriveMode.stop
 
 	spin_direction = -1
 	at_goal_state = ''
 
 	def on_iteration(self, tm):
-		if self.turn:
+		if self.drive_mode is DriveMode.turn:
 			if self.drive.at_gyro_goal():
 				self.next_state(self.at_goal_state)
 			else:
 				self.drive.turn_gyro()
-		else:
+		elif self.drive_mode is DriveMode.drive:
 			if self.drive.at_encoder_goal():
 				self.next_state(self.at_goal_state)
 			else:
 				self.drive.drive_encoder()
-
+		else:
+			self.drive.stop()
 		if self.drop:
 			self.elevator.drop_stack()
 		super(ThreeTote, self).on_iteration(tm)
@@ -84,21 +90,23 @@ class ThreeTote(StatefulAutonomous):
 	@state()
 	def prep_turn(self):
 		self.drive.set_gyro_goal(90)
-		self.turn = True
+		self.drive_mode = DriveMode.turn
 		self.at_goal_state = 'drive_towards_zone'
 
-	@timed_state(duration=1.25, next_state='leave')
+	@state()
 	def drive_towards_zone(self):
-		self.turn = False
+		self.drive_mode = DriveMode.drive
 		self.intake.spin(0)
 		self.drive.set_encoder_goal(4 * 12)
+		self.at_goal_state = 'leave_zone'
 
-	@timed_state(duration=1.25, next_state='stop')
-	def leave(self):
+	@state()
+	def leave_zone(self):
+		self.drive.set_encoder_goal(-4 * 12)
 		self.intake.open()
-		self.elevator.set_goal(self.elevator.DROP_POSITION)
 		self.drop = True
+		self.at_goal_state = 'stop'
 
 	@state()
 	def stop(self):
-		self.
+		self.drive_mode = DriveMode.stop
