@@ -17,6 +17,5 @@ solenoid_dropper = 1
 
 encoder_elevator = 0, 1, True  # The true reverses the encoder.
 
-hall_effect = 2
 intake_photosensor = 3
 gyro = 0  # analog!

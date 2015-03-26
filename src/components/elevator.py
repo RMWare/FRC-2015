@@ -25,16 +25,12 @@ class Elevator(Component):
 		super().__init__()
 		self._motor = SyncGroup(Talon, constants.motor_elevator)
 		self._position_encoder = Encoder(*constants.encoder_elevator)
-		self._zeroing_magnet = DigitalInput(constants.hall_effect)
 		self._intake_photosensor = DigitalInput(constants.intake_photosensor)
 		self._dropper_piston = Solenoid(constants.solenoid_dropper)
 
 		self._position_encoder.setDistancePerPulse((PITCH_DIAMETER * math.pi) / TICKS_PER_REVOLUTION)
 
 		self._follower = TrajectoryFollower()
-
-		self._ready_to_zero = False
-
 		self.goal = 0
 		self._error = 0
 
@@ -48,8 +44,7 @@ class Elevator(Component):
 
 		quickdebug.add_tunables(self, ["HOLD_POSITION", "STACK_POSITION", "DROP_POSITION", "STACK_BOTTOM_POSITION"])
 		quickdebug.add_printables(self, [
-			('elevator position', self._position_encoder.getDistance),
-			('hall effect', self._zeroing_magnet.get),
+			('position', self._position_encoder.getDistance),
 			('photo sensor', self._intake_photosensor.get),
 			('at setpoint', self.at_goal),
 			"_error",
@@ -106,10 +101,10 @@ class Elevator(Component):
 	def at_goal(self):
 		return self._follower.trajectory_finished()  # and abs(self._error) < self.ON_TARGET_DELTA
 
-	def stack(self, force_stack=False, bin=False):
+	def stack(self, force_stack=False, is_bin=False):
 		self._should_stack = True
 		self._force_stack = force_stack
-		self._should_stack_bin = bin
+		self._should_stack_bin = is_bin
 
 	def drop_stack(self):
 		self.set_goal(self.DROP_POSITION)

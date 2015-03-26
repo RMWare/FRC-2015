@@ -9,7 +9,7 @@ class Intake(Component):
 
 		self._l_motor = Talon(constants.motor_intake_l)
 		self._r_motor = Talon(constants.motor_intake_r)
-		self._intake_piston = Solenoid(0, constants.solenoid_intake)
+		self._intake_piston = Solenoid(constants.solenoid_intake)
 
 		self._left_pwm = 0
 		self._right_pwm = 0
