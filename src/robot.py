@@ -64,7 +64,7 @@ class Tachyon(SampleRobot):
 			if self.chandler.right_trigger():  # Stacking mode
 				self.elevator.stack(force_stack=self.chandler.a())  # force stacking if A button is held
 				self.intake.spin(1)  # Run our wintakes in & try to grab something
-			elif self.chandler.b():  # TODO figure out what button to map to this
+			elif self.chandler.b() and not self.elevator.has_bin():  # TODO figure out what button to map to this
 				self.elevator.stack(force_stack=self.chandler.a(), is_bin=True)
 				self.intake.spin(0.75)
 			else:  # If we're just driving around
@@ -80,6 +80,7 @@ class Tachyon(SampleRobot):
 
 			if self.chandler.right_pressed():  # TODO we need a better control for slowing driving down
 				throttle *= 0.4
+				wheel *= 0.4
 
 			self.drive.cheesy_drive(wheel, throttle * 0.75, self.chandler.left_bumper())
 

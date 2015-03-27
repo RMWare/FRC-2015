@@ -19,10 +19,7 @@ class Intake(Component):
 		self._l_motor.set(self._left_pwm)
 		self._r_motor.set(self._right_pwm)
 
-		if self._open:
-			self._intake_piston.set(True)
-		else:
-			self._intake_piston.set(False)
+		self._intake_piston.set(not self._open)
 
 	def spin(self, power, same_direction=False):
 		self._left_pwm = power
