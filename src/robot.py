@@ -2,10 +2,7 @@
 from common.xbox import XboxController
 from wpilib import SampleRobot, Timer, SmartDashboard, LiveWindow, run
 
-from components.drive import Drive
-from components.intake import Intake
-from components.pneumatics import Pneumatics
-from components.elevator import Elevator
+from components import drive, intake, pneumatics, elevator
 from common import delay, util, quickdebug
 from robotpy_ext.autonomous import AutonomousModeSelector
 import logging
@@ -26,10 +23,10 @@ class Tachyon(SampleRobot):
 	def robotInit(self):
 		self.chandler = XboxController(0)
 		self.meet = XboxController(1)
-		self.drive = Drive()
-		self.pneumatics = Pneumatics()
-		self.intake = Intake()
-		self.elevator = Elevator()
+		self.drive = drive.Drive()                      # So redundant omg
+		self.pneumatics = pneumatics.Pneumatics()
+		self.intake = intake.Intake()
+		self.elevator = elevator.Elevator()
 
 		self.components = {
 			'drive': self.drive,
@@ -72,7 +69,7 @@ class Tachyon(SampleRobot):
 				self.intake.spin(0.75)
 			else:  # If we're just driving around
 				self.intake.spin(0)  # Default no spinnerino pls
-				self.elevator.set_goal(self.elevator.HOLD_POSITION)  # Holding height for the totes
+				self.elevator.set_goal(elevator.Setpoints.HOLD)  # Holding height for the totes
 
 			if self.chandler.left_trigger():  # If we're trying to drop the stack
 				self.intake.open()  # Open de intakes

@@ -11,15 +11,16 @@ log = logging.getLogger("elevator")
 PITCH_DIAMETER = 1.432
 TICKS_PER_REVOLUTION = 2048
 
+class Setpoints(object):
+	HOLD = 10
+	DROP = 0
+	FIRST_BIN = 18
+	FIRST_TOTE = 18
+	INTAKE = 18
+	INTAKE_BOTTOM = 0
 
 class Elevator(Component):
 	ON_TARGET_DELTA = 1 / 4
-
-	# heights n shit
-	HOLD_POSITION         = 10
-	DROP_POSITION         = 0
-	STACK_POSITION        = 18
-	STACK_BOTTOM_POSITION = 0
 
 	def __init__(self):
 		super().__init__()
@@ -42,7 +43,7 @@ class Elevator(Component):
 		self._should_open_stabilizer_override = False
 		self._force_stack = False  # makes the elevator stack even with nothing inside
 
-		quickdebug.add_tunables(self, ["HOLD_POSITION", "STACK_POSITION", "DROP_POSITION", "STACK_BOTTOM_POSITION"])
+		quickdebug.add_tunables(Setpoints, ["HOLD", "DROP", "FIRST_BIN", "FIRST_TOTE", "INTAKE", "INTAKE_BOTTOM"])
 		quickdebug.add_printables(self, [
 			('position', self._position_encoder.getDistance),
 			('photo sensor', self._intake_photosensor.get),
@@ -57,22 +58,25 @@ class Elevator(Component):
 		# Stacking logic
 		if self.at_goal():
 			if self._should_stack:  # runs every time we hit setpoint in stacking mode
-				if self.goal == self.STACK_POSITION:  # If we're waiting for a tote
+				# If we're waiting for a tote/bin and we're at the top
+				if self.goal == Setpoints.FIRST_BIN or self.goal == Setpoints.FIRST_TOTE:
 					if self.has_tote() and self._tote_count <= 6:  # If we have a tote or a bin in the robot
 						# The elevator won't stack if it's already at its max position.
-						self.set_goal(self.STACK_BOTTOM_POSITION)  # Go down
+						self.set_goal(Setpoints.INTAKE_BOTTOM)  # Go down
 						if self._tote_count == 1 and self._has_bin:
 							self._should_open_stabilizer = True
+				elif self.goal == Setpoints.HOLD or self.goal == Setpoints.DROP:  # If we're coming up for the first time
+					self.set_goal(Setpoints.FIRST_BIN if self._should_stack_bin else Setpoints.FIRST_TOTE)
 				else:  # We're at the bottom, pick whatever we grabbed up
-					if self._should_stack_bin:  # We're stacking a bin
+					self._should_stack = False  # Reset this so we don't keep stop stacking
+					if self._should_stack_bin:  # We just stacked a bin
 						self._should_stack_bin = False
 						self._has_bin = True
-					else:
+					else:  # We just stacked a tote
 						self._tote_count += 1
+						# This opens the stabilizer when transitioning from 1 to 2 totes, so the bin settles into our stabilizer.
 						if self._tote_count == 2 and self._has_bin:
 							self._should_open_stabilizer = False
-					self._should_stack = False  # Reset this so we don't keep stacking forever
-					self.set_goal(self.STACK_POSITION)  # And go back up
 
 		self._error = self.goal - self.position()
 		self._motor.set(self._follower.calculate(self.position()))
@@ -107,7 +111,7 @@ class Elevator(Component):
 		self._should_stack_bin = is_bin
 
 	def drop_stack(self):
-		self.set_goal(self.DROP_POSITION)
+		self.set_goal(Setpoints.HOLD)
 		self._should_open_stabilizer_override = True
 		self._tote_count = 0
 		self._has_bin = False

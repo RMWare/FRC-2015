@@ -1,7 +1,10 @@
 from pyfrc.tests import *
 from robotpy_ext.autonomous.selector_tests import *
+import logging
 
 from components import Component
+
+log = logging.getLogger('autonomous')
 
 
 def test_components(control, fake_time, robot):
