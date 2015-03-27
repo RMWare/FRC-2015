@@ -5,10 +5,12 @@ from robotpy_ext.autonomous import StatefulAutonomous, state, timed_state
 # aren't accessible in this object. They are, and the above comment fixes it for IntelliJ IDEA
 from common.util import AutoNumberEnum
 
+
 class DriveMode(AutoNumberEnum):
 	stop = ()
 	turn = ()
 	drive = ()
+
 
 class ThreeTote(StatefulAutonomous):
 	MODE_NAME = 'Three totes in auto zone'

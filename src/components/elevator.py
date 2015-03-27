@@ -46,9 +46,9 @@ class Elevator(Component):
 		quickdebug.add_tunables(Setpoints, ["HOLD", "DROP", "FIRST_BIN", "FIRST_TOTE", "INTAKE", "INTAKE_BOTTOM"])
 		quickdebug.add_printables(self, [
 			('position', self._position_encoder.getDistance),
-			('photo sensor', self._intake_photosensor.get),
-			('at setpoint', self.at_goal),
-			"_error",
+			('photosensor', self._intake_photosensor.get),
+			('at goal', self.at_goal),
+			"_error", "_has_bin", "_tote_count"
 		])
 
 	def stop(self):
@@ -66,7 +66,10 @@ class Elevator(Component):
 						if self._tote_count == 1 and self._has_bin:
 							self._should_open_stabilizer = True
 				elif self.goal == Setpoints.HOLD or self.goal == Setpoints.DROP:  # If we're coming up for the first time
-					self.set_goal(Setpoints.FIRST_BIN if self._should_stack_bin else Setpoints.FIRST_TOTE)
+					if self._tote_count == 0 and not self._has_bin:
+						self.set_goal(Setpoints.FIRST_BIN if self._should_stack_bin else Setpoints.FIRST_TOTE)
+					else:
+						self.set_goal(Setpoints.INTAKE)
 				else:  # We're at the bottom, pick whatever we grabbed up
 					self._should_stack = False  # Reset this so we don't keep stop stacking
 					if self._should_stack_bin:  # We just stacked a bin
