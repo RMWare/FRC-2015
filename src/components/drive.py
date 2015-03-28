@@ -25,9 +25,6 @@ class Drive(Component):
 	encoder_goal = 0
 	encoder_tolerance = 1  # Inches
 
-	start_distance_l = 0
-	start_distance_r = 0
-
 	def __init__(self):
 		super().__init__()
 
@@ -42,9 +39,15 @@ class Drive(Component):
 		REDUCTION = 30 / 36
 
 		self.l_encoder.setDistancePerPulse((DISTANCE_PER_REV * REDUCTION) / TICKS_PER_REV)
+		self.r_encoder.setDistancePerPulse((DISTANCE_PER_REV * REDUCTION) / TICKS_PER_REV)
 
 		self.gyro = Gyro(constants.gyro)
-		quickdebug.add_printables(self, ('gyro angle', self.gyro.getAngle))
+		quickdebug.add_printables(self, [
+			('gyro angle', self.gyro.getAngle),
+			('left encoder', self.l_encoder.getDistance),
+			('right encoder', self.r_encoder.getDistance),
+		    'left_pwm', 'right_pwm', 'encoder_goal'
+		])
 
 	def update(self):
 		self.l_motor.set(self.left_pwm)
@@ -121,21 +124,20 @@ class Drive(Component):
 
 	# Stuff for encoder driving
 	def set_encoder_goal(self, goal):
-		self.start_distance_l = self.l_encoder.getDistance()
-		self.start_distance_r = self.r_encoder.getDistance()
+		self.l_encoder.reset()
+		self.r_encoder.reset()
 		self.encoder_goal = goal
 
 	def drive_encoder(self):
-		lim = 0.5  # 50% MAX SPEED
-		l_error = self.start_distance_l + self.encoder_goal - self.l_encoder.getDistance()
-		r_error = self.start_distance_r + self.encoder_goal - self.r_encoder.getDistance()
+		l_error = self.encoder_goal - self.l_encoder.getDistance()
+		r_error = self.encoder_goal - self.r_encoder.getDistance()
 
-		self.left_pwm = util.limit(l_error, lim)
-		self.right_pwm = util.limit(r_error, lim)
+		self.left_pwm = l_error
+		self.right_pwm = r_error
 
 	def at_encoder_goal(self):
-		l_error = self.start_distance_l + self.encoder_goal - self.l_encoder.getDistance()
-		r_error = self.start_distance_r + self.encoder_goal - self.r_encoder.getDistance()
+		l_error = self.encoder_goal - self.l_encoder.getDistance()
+		r_error = self.encoder_goal - self.r_encoder.getDistance()
 		return l_error < self.encoder_tolerance and r_error < self.encoder_tolerance
 
 

@@ -15,7 +15,7 @@ TICKS_PER_REVOLUTION = 2048
 class Setpoints(object):
 	HOLD = 10
 	DROP = 1
-	FIRST_BIN = 11
+	BIN = 11
 	FIRST_TOTE = 18
 	INTAKE = 18
 	INTAKE_BOTTOM = 1
@@ -45,7 +45,7 @@ class Elevator(Component):
 		self._should_open_stabilizer_override = False
 		self._force_stack = False  # makes the elevator stack even with nothing inside
 
-		quickdebug.add_tunables(Setpoints, ["HOLD", "DROP", "FIRST_BIN", "FIRST_TOTE", "INTAKE", "INTAKE_BOTTOM"])
+		quickdebug.add_tunables(Setpoints, ["HOLD", "DROP", "BIN", "FIRST_TOTE", "INTAKE", "INTAKE_BOTTOM"])
 		quickdebug.add_printables(self, [
 			('position', self._position_encoder.getDistance),
 			('photosensor', self._intake_photosensor.get),
@@ -64,14 +64,15 @@ class Elevator(Component):
 					#self._should_stack = False  # Reset this so we don't keep stop stacking
 					log.info("intake_bottom")
 					if self._should_stack_bin:  # We just stacked a bin
-						self._should_stack_bin = False
 						self._has_bin = True
 					else:  # We just stacked a tote
 						self.tote_count += 1
 					self.set_goal(Setpoints.INTAKE)
 				# If we're waiting for a tote/bin and we're at the top
-				elif self.goal == Setpoints.FIRST_BIN or self.goal == Setpoints.FIRST_TOTE or self.goal == Setpoints.INTAKE:
-					if self.has_tote():  # If we have a tote or a bin in the robot
+				elif self.goal == Setpoints.BIN or self.goal == Setpoints.FIRST_TOTE or self.goal == Setpoints.INTAKE:
+					if self._has_bin and self._should_stack_bin:
+						self._should_stack_bin = False
+					if self.has_game_piece() or self._force_stack:  # If we have a tote or a bin in the robot
 						if self.tote_count < 6:
 							# The elevator won't stack if it's already at its max position.
 							self.set_goal(Setpoints.INTAKE_BOTTOM)  # Go down
@@ -80,7 +81,7 @@ class Elevator(Component):
 
 				elif self.goal == Setpoints.HOLD or self.goal == Setpoints.DROP:  # If we're coming up for the first time
 					if self._should_stack_bin:
-						self.set_goal(Setpoints.FIRST_BIN)
+						self.set_goal(Setpoints.BIN)
 					elif self.tote_count == 0:
 						self.set_goal(Setpoints.FIRST_TOTE)
 					else:
@@ -108,7 +109,7 @@ class Elevator(Component):
 		self._follower.set_goal(0)
 		self._follower._reset = True
 
-	def has_tote(self):
+	def has_game_piece(self):
 		return not self._intake_photosensor.get() or self._force_stack
 
 	def position(self):

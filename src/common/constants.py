@@ -2,7 +2,8 @@
 # Drive
 motor_drive_l = 3, 4
 motor_drive_r = 5, 6
-encoder_drive_l = 4, 5
+
+encoder_drive_l = 4, 5, True  # Reverses encoder
 encoder_drive_r = 6, 7
 
 # Intake

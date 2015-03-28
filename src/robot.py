@@ -2,7 +2,7 @@
 from common.xbox import XboxController
 from wpilib import SampleRobot, Timer, SmartDashboard, LiveWindow, run
 
-from components import drive, intake, pneumatics, elevator
+from components import drive, intake, pneumatics, elevator, leds
 from common import delay, util, quickdebug
 from robotpy_ext.autonomous import AutonomousModeSelector
 import logging
@@ -27,6 +27,7 @@ class Tachyon(SampleRobot):
 		self.pneumatics = pneumatics.Pneumatics()
 		self.intake = intake.Intake()
 		self.elevator = elevator.Elevator()
+		self.leds = leds.LEDStrip()
 
 		self.components = {
 			'drive': self.drive,
@@ -42,12 +43,17 @@ class Tachyon(SampleRobot):
 
 	def autonomous(self):
 		SmartDashboard.putNumber('RobotMode', MODE_AUTONOMOUS)
-		self.autonomous_modes.run(CONTROL_LOOP_WAIT_TIME, iter_fn=self.update)
+		self.autonomous_modes.run(CONTROL_LOOP_WAIT_TIME, iter_fn=self.update_all)
 		Timer.delay(CONTROL_LOOP_WAIT_TIME)
+
+	def update_all(self):
+		self.update()
+		self.update_networktables()
 
 	def disabled(self):
 		SmartDashboard.putNumber('RobotMode', MODE_DISABLED)
 		while self.isDisabled():
+			self.update_networktables()
 			Timer.delay(0.01)
 
 	def operatorControl(self):
@@ -66,6 +72,7 @@ class Tachyon(SampleRobot):
 				self.intake.spin(1)  # Run our wintakes in & try to grab something
 			elif self.chandler.b() and not self.elevator.has_bin():  # TODO figure out what button to map to this
 				self.elevator.stack(force_stack=self.chandler.a(), is_bin=True)
+				self.intake.open()
 				self.intake.spin(0.75)
 			else:  # If we're just driving around
 				self.intake.spin(0)  # Default no spinnerino pls
@@ -88,8 +95,8 @@ class Tachyon(SampleRobot):
 			if self.meet.right_trigger():  # Emergency something button
 				self.elevator.set_goal(self.elevator)
 
-			self.update_networktables()
 			self.update()
+			self.update_networktables()
 
 			precise_delay.wait()
 

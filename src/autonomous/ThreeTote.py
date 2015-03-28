@@ -6,40 +6,41 @@ from robotpy_ext.autonomous import StatefulAutonomous, state, timed_state
 from common.util import AutoNumberEnum
 
 
-class DriveMode(AutoNumberEnum):
-	stop = ()
-	turn = ()
-	drive = ()
-
-
 class ThreeTote(StatefulAutonomous):
 	MODE_NAME = 'Three totes in auto zone'
 	DEFAULT = True
 
 	drop = False
-	drive_mode = DriveMode.stop
 
 	spin_direction = -1
 	at_goal_state = ''
 
 	def on_iteration(self, tm):
-		if self.drive_mode is DriveMode.turn:
-			if self.drive.at_gyro_goal():
-				self.next_state(self.at_goal_state)
-			else:
-				self.drive.turn_gyro()
-		elif self.drive_mode is DriveMode.drive:
-			if self.drive.at_encoder_goal():
-				self.next_state(self.at_goal_state)
-			else:
-				self.drive.drive_encoder()
-		else:
-			self.drive.stop()
 		if self.drop:
 			self.elevator.drop_stack()
 		super(ThreeTote, self).on_iteration(tm)
 
-	@timed_state(duration=1, next_state='bin1', first=True)
+	@state(first=True)
+	def drive_six_inches(self):
+		self.at_goal_state = 'stop'
+		self.drive.set_encoder_goal(5 * 12)
+		self.next_state('drive_encoder')
+
+	@state()
+	def drive_encoder(self):
+		if self.drive.at_encoder_goal():
+			self.next_state(self.at_goal_state)
+		else:
+			self.drive.drive_encoder()
+
+	@state()
+	def drive_gyro(self):
+		if self.drive.at_gyro_goal():
+			self.next_state(self.at_goal_state)
+		else:
+			self.drive.turn_gyro()
+
+	@timed_state(duration=1, next_state='bin1')#, first=True)
 	def tote1(self):
 		self.elevator.stack()
 		self.intake.spin(1)  # intake
@@ -111,4 +112,4 @@ class ThreeTote(StatefulAutonomous):
 
 	@state()
 	def stop(self):
-		self.drive_mode = DriveMode.stop
+		self.drive.tank_drive(0, 0)
