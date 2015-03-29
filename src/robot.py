@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-from common.xbox import XboxController
-from wpilib import SampleRobot, Timer, SmartDashboard, LiveWindow, run
-
-from components import drive, intake, pneumatics, elevator, leds
-from common import delay, util, quickdebug
-from robotpy_ext.autonomous import AutonomousModeSelector
 import logging
+
+from wpilib import SampleRobot, Timer, SmartDashboard, LiveWindow, run
+from robotpy_ext.autonomous import AutonomousModeSelector
+
+from common.xbox import XboxController
+from common.util import deadband
+from components import drive, intake, pneumatics, elevator
+from common import delay, quickdebug
+
 
 log = logging.getLogger("robot")
 
@@ -27,7 +30,7 @@ class Tachyon(SampleRobot):
 		self.pneumatics = pneumatics.Pneumatics()
 		self.intake = intake.Intake()
 		self.elevator = elevator.Elevator()
-		self.leds = leds.LEDStrip()
+		#self.leds = leds.LEDStrip()
 
 		self.components = {
 			'drive': self.drive,
@@ -60,40 +63,38 @@ class Tachyon(SampleRobot):
 		SmartDashboard.putNumber('RobotMode', MODE_TELEOPERATED)
 		precise_delay = delay.PreciseDelay(CONTROL_LOOP_WAIT_TIME)
 		while self.isOperatorControl() and self.isEnabled():
-			# Default closed
-			self.intake.close()
 
-			# Driving
-			wheel = util.deadband(self.chandler.right_x(), .2) * .6
-			throttle = -util.deadband(self.chandler.left_y(), .23) * 0.8
-
-			if self.chandler.right_trigger():  # Stacking mode
-				self.elevator.stack(force_stack=self.chandler.a())  # force stacking if A button is held
-				self.intake.spin(1)  # Run our wintakes in & try to grab something
-			elif self.chandler.b() and not self.elevator.has_bin():  # TODO figure out what button to map to this
-				self.elevator.stack(force_stack=self.chandler.a(), is_bin=True)
+			if self.chandler.right_trigger():
+				self.elevator.stack_bin()
 				self.intake.open()
 				self.intake.spin(0.75)
-			else:  # If we're just driving around
-				self.intake.spin(0)  # Default no spinnerino pls
-				self.elevator.set_goal(elevator.Setpoints.HOLD)  # Holding height for the totes
+			else:
+				self.intake.close()
+				self.intake.spin(1 if self.elevator.full() else 0)  # Intaking woo
 
 			if self.chandler.left_trigger():  # If we're trying to drop the stack
-				self.intake.open()  # Open de intakes
-				self.elevator.drop_stack()  # Drops the passive
+				self.intake.spin(0)
+				self.intake.open()
+				self.elevator.drop_stack()
 
-			if self.chandler.right_bumper():  # Open & close intakes (while stacking, usually)
+			if self.chandler.right_bumper():
 				self.intake.open()
 
-			if self.chandler.right_pressed():  # TODO we need a better control for slowing driving down
+			wheel = deadband(self.chandler.right_x(), .2)
+			throttle = -deadband(self.chandler.left_y(), .23) * 0.8
+
+			if self.chandler.right_pressed():
 				throttle *= 0.4
 				wheel *= 0.4
 
 			self.drive.cheesy_drive(wheel, throttle * 0.75, self.chandler.left_bumper())
 
-			# Meetkumar's operator controls
-			if self.meet.right_trigger():  # Emergency something button
-				self.elevator.set_goal(self.elevator)
+			if self.meet.dpad() == 0:
+				# TODO figure out what angles are directions on the d-pad and apply the following
+				# https://robotpy-wpilib-utilities.readthedocs.org/en/latest/robotpy_ext.control.html#module-robotpy_ext.control.button_debouncer
+				# Up button should increment elevator tote count, down should decrement
+				# Right should toggle the "_has_bin" variable
+				pass
 
 			self.update()
 			self.update_networktables()

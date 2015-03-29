@@ -1,10 +1,13 @@
 import logging
 import math
+
 from wpilib import DigitalInput, Encoder, Talon, Solenoid
+
 from common import constants, quickdebug
 from common.syncgroup import SyncGroup
 from . import Component
 from motionplanning import TrajectoryFollower
+
 
 log = logging.getLogger("elevator")
 
@@ -13,12 +16,10 @@ TICKS_PER_REVOLUTION = 2048
 
 
 class Setpoints(object):
-	HOLD = 10
-	DROP = 1
+	BOTTOM = 1
 	BIN = 11
+	TOTE = 18
 	FIRST_TOTE = 18
-	INTAKE = 18
-	INTAKE_BOTTOM = 1
 
 
 class Elevator(Component):
@@ -30,79 +31,64 @@ class Elevator(Component):
 		self._position_encoder = Encoder(*constants.encoder_elevator)
 		self._intake_photosensor = DigitalInput(constants.intake_photosensor)
 		self._dropper_piston = Solenoid(constants.solenoid_dropper)
-
 		self._position_encoder.setDistancePerPulse((PITCH_DIAMETER * math.pi) / TICKS_PER_REVOLUTION)
 
+		# Trajectory controlling stuff
 		self._follower = TrajectoryFollower()
-		self.goal = 0
-		self._error = 0
 
-		self.tote_count = 0  # Keep track of totes!
-		self._has_bin = False  # Do we have a bin?
-		self._should_stack = False
-		self._should_stack_bin = False
-		self._should_open_stabilizer = False
-		self._should_open_stabilizer_override = False
-		self._force_stack = False  # makes the elevator stack even with nothing inside
+		self._tote_count = 0  # Keep track of totes!
+		self._has_bin = False  # Do we have a bin on top?
 
-		quickdebug.add_tunables(Setpoints, ["HOLD", "DROP", "BIN", "FIRST_TOTE", "INTAKE", "INTAKE_BOTTOM"])
+		self._waiting_for_bin = False  # Are we currently trying to get a bin ?
+		self._should_drop = False  # Are we currently trying to get a bin ?
+
+		self._should_open_stabilizer = False  # Opens the stabilizer manually
+		self._force_stack = False  # manually actuates the elevator down and up
+
+		quickdebug.add_tunables(Setpoints, ["BOTTOM", "BIN", "TOTE", "FIRST_TOTE"])
 		quickdebug.add_printables(self, [
 			('position', self._position_encoder.getDistance),
 			('photosensor', self._intake_photosensor.get),
 			('at goal', self.at_goal),
-			"_error", "_has_bin", "tote_count", "goal"
+			"_has_bin", "_tote_count"
 		])
 
 	def stop(self):
 		self._motor.set(0)
 
 	def update(self):
-		# Stacking logic
+		goal = self._follower.get_goal()
+
 		if self.at_goal():
-			if self._should_stack:  # runs every time we hit setpoint in stacking mode
-				if self.goal == Setpoints.INTAKE_BOTTOM:  # We're at the bottom, pick whatever we grabbed up
-					#self._should_stack = False  # Reset this so we don't keep stop stacking
-					log.info("intake_bottom")
-					if self._should_stack_bin:  # We just stacked a bin
-						self._has_bin = True
-					else:  # We just stacked a tote
-						self.tote_count += 1
-					self.set_goal(Setpoints.INTAKE)
-				# If we're waiting for a tote/bin and we're at the top
-				elif self.goal == Setpoints.BIN or self.goal == Setpoints.FIRST_TOTE or self.goal == Setpoints.INTAKE:
-					if self._has_bin and self._should_stack_bin:
-						self._should_stack_bin = False
-					if self.has_game_piece() or self._force_stack:  # If we have a tote or a bin in the robot
-						if self.tote_count < 6:
-							# The elevator won't stack if it's already at its max position.
-							self.set_goal(Setpoints.INTAKE_BOTTOM)  # Go down
-							if self.tote_count == 1 and self._has_bin:
-								self._should_open_stabilizer = True  # Settle the bin
-
-				elif self.goal == Setpoints.HOLD or self.goal == Setpoints.DROP:  # If we're coming up for the first time
-					if self._should_stack_bin:
-						self.set_goal(Setpoints.BIN)
-					elif self.tote_count == 0:
-						self.set_goal(Setpoints.FIRST_TOTE)
+			if self._should_drop:  # Overrides everything else
+				self._follower.set_goal(Setpoints.BOTTOM)
+				self._dropper_piston.set(False)
+			else:
+				if goal == Setpoints.BOTTOM:  # If we've just gone down to grab something
+					if self._waiting_for_bin:
+						self._has_bin = True  # Count the bin
+					else:  # We were waiting for a tote
+						self._tote_count += 1
+					self._follower.set_goal(Setpoints.TOTE)  # Go back up
+				elif self.has_game_piece() and self._tote_count < 5:  # If we try to stack a 6th tote it'll break the robot
+					self._follower.set_goal(Setpoints.BOTTOM)
+					if self._has_bin:  # Transfer!
+						if self._tote_count == 1:
+							self._dropper_piston.set(False)
+						elif self._tote_count == 2:
+							self._dropper_piston.set(True)
+				else:  # Wait for more game pieces
+					if self._waiting_for_bin:
+						self._follower.set_goal(Setpoints.BIN)
 					else:
-						self.set_goal(Setpoints.INTAKE)
+						if self._tote_count == 0:
+							self._follower.set_goal(Setpoints.FIRST_TOTE)
+						else:
+							self._follower.set_goal(Setpoints.TOTE)
 
-				if self.goal == Setpoints.INTAKE:
-					if self.tote_count == 2 and self._has_bin:
-						self._should_open_stabilizer = False
-
-		self._error = self.goal - self.position()
 		self._motor.set(self._follower.calculate(self.position()))
-
-		# Opens the stabilizer if needed
-		self._dropper_piston.set(not (self._should_open_stabilizer or self._should_open_stabilizer_override))
-
-		# And then reset things so we don't do them forever
-		self._should_open_stabilizer_override = False
-
-	def set_goal(self, goal):  # translates levels 0-6 into encoder value
-		self.goal = max(0, goal)  # this should really never happen at all, should always be > 0
-		self._follower.set_goal(goal)
+		self._waiting_for_bin = False
+		self._should_drop = False
 
 	def reset_encoder(self):
 		self._position_encoder.reset()
@@ -116,18 +102,16 @@ class Elevator(Component):
 		return self._position_encoder.getDistance()
 
 	def at_goal(self):
-		return self._follower.trajectory_finished()  # and abs(self._error) < self.ON_TARGET_DELTA
-
-	def stack(self, force_stack=False, is_bin=False):
-		self._should_stack = True
-		self._force_stack = force_stack
-		self._should_stack_bin = is_bin
+		return self._follower.trajectory_finished()
 
 	def drop_stack(self):
-		self.set_goal(Setpoints.DROP)
-		self._should_open_stabilizer_override = True
-		self.tote_count = 0
+		self._should_drop = True
+		self._tote_count = 0   # Reset our counts
 		self._has_bin = False
 
-	def has_bin(self):
-		return self._has_bin
+	def stack_bin(self):
+		if not self._has_bin:
+			self._waiting_for_bin = True
+
+	def full(self):
+		return self._tote_count == 5 and self.has_game_piece()
