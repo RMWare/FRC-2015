@@ -40,7 +40,6 @@ class Elevator(Component):
 		self._has_bin = False  # Do we have a bin on top?
 
 		self._tote_first = False  # Override bin first to grab totes before anything else
-		self._tote_first = False
 		self._should_drop = False  # Are we currently trying to get a bin ?
 
 		self._should_open_stabilizer = False  # Opens the stabilizer manually
