@@ -6,7 +6,7 @@ from components import Component
 class LEDStrip(Component):
 	def __init__(self):
 		self.spi = SPI(0)
-		self.spi.setClockRate(12000000)
+		self.spi.setClockRate(2000000)
 
 		self.leds = 22
 		self.lastIndex = self.leds - 1
@@ -24,7 +24,7 @@ class LEDStrip(Component):
 			self.gamma[i] = 0x80 | int(
 				pow(float(i) / 255.0, 2.5) * 127.0 + 0.5
 			)
-		self.fill_RGB(1, 0, 0)
+		self.fill_RGB(255, 0, 0)
 
 	def set_brightness(self, bright):
 		if bright > 1.0 or bright < 0.0:

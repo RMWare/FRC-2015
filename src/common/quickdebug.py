@@ -46,7 +46,10 @@ def sync():
 				out = str(e)
 			printable_name = printable[0]
 		else:
-			out = getattr(object_, printable)
+			try:
+				out = getattr(object_, printable)
+			except BaseException as e:
+				out = str(e)
 			printable_name = printable
 		try:
 			NetworkTable.getTable(object_name).putValue(printable_name, out)

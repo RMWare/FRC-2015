@@ -7,7 +7,7 @@ from robotpy_ext.autonomous import AutonomousModeSelector
 
 from common.xbox import XboxController
 from common.util import deadband
-from components import drive, intake, pneumatics, elevator
+from components import drive, intake, pneumatics, elevator, leds
 from common import delay, quickdebug
 
 
@@ -31,13 +31,14 @@ class Tachyon(SampleRobot):
 		self.pneumatics = pneumatics.Pneumatics()
 		self.intake = intake.Intake()
 		self.elevator = elevator.Elevator()
-		#self.leds = leds.LEDStrip()
+		# self.leds = leds.LEDStrip()
 
 		self.components = {
 			'drive': self.drive,
 			'pneumatics': self.pneumatics,
 			'intake': self.intake,
 			'elevator': self.elevator,
+		    # 'leds': self.leds,
 		}
 
 		self.nt_timer = Timer()  # timer for SmartDashboard update so we don't use all our bandwidth
@@ -66,12 +67,20 @@ class Tachyon(SampleRobot):
 		while self.isOperatorControl() and self.isEnabled():
 
 			if self.chandler.right_trigger():
-				self.elevator.tote_first()
-				self.intake.open()
-				self.intake.spin(0.75)
-			else:
+				self.elevator.stack_tote_first()
 				self.intake.close()
-				self.intake.spin(1 if self.elevator.full() else 0)  # Intaking woo
+				self.intake.spin(1)
+			else:
+				if not self.elevator.has_bin:
+					self.intake.spin(.75)  # Intaking woo
+					if self.elevator.tote_count == 0:
+						self.intake.open()  # Only open for the first tote
+				else:  # If we have a bin, then just intake
+					self.intake.spin(0 if self.elevator.full() else 1)
+					if self.elevator.at_goal:
+						self.intake.close()
+
+			self.elevator._force_stack = self.chandler.a()
 
 			if self.chandler.left_trigger():  # If we're trying to drop the stack
 				self.intake.spin(0)
@@ -79,7 +88,10 @@ class Tachyon(SampleRobot):
 				self.elevator.drop_stack()
 
 			if self.chandler.right_bumper():
-				self.intake.open()
+				if not self.elevator.has_bin and self.elevator.tote_count == 0:
+					self.intake.close()
+				else:
+					self.intake.open()
 
 			wheel = deadband(self.chandler.right_x(), .2)
 			throttle = -deadband(self.chandler.left_y(), .23) * 0.8
@@ -115,6 +127,7 @@ class Tachyon(SampleRobot):
 				try:
 					component.update()
 				except Exception as e:
+
 					if self.ds.isFMSAttached():
 						log.error("In subsystem %s: %s" % (component, e))
 					else:

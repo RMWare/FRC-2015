@@ -3,8 +3,6 @@ from robotpy_ext.autonomous import StatefulAutonomous, state, timed_state
 ## noinspect on PyUnresolvedReferences
 # Because python is dynamic and can do crazy crap, some IDEs complain that the subsystems
 # aren't accessible in this object. They are, and the above comment fixes it for IntelliJ IDEA
-from common.util import AutoNumberEnum
-
 
 class ThreeTote(StatefulAutonomous):
 	MODE_NAME = 'Three totes in auto zone'
@@ -20,11 +18,6 @@ class ThreeTote(StatefulAutonomous):
 			self.elevator.drop_stack()
 		super(ThreeTote, self).on_iteration(tm)
 
-	@state(first=True)
-	def drive_six_inches(self):
-		self.at_goal_state = 'stop'
-		self.drive.set_encoder_goal(5 * 12)
-		self.next_state('drive_encoder')
 
 	@state()
 	def drive_encoder(self):
@@ -40,14 +33,18 @@ class ThreeTote(StatefulAutonomous):
 		else:
 			self.drive.turn_gyro()
 
-	@timed_state(duration=1, next_state='bin1')#, first=True)
-	def tote1(self):
-		self.elevator.stack()
-		self.intake.spin(1)  # intake
+	@state(first=True)
+	def stack_first_and_turn(self):
+		self.elevator._tote_count = 1  # I know it's private but shush TODO
+		self.at_goal_state = 'drive_around_first_bin'
+		self.drive.set_gyro_goal(45)
+		self.next_state('drive_gyro')
 
-	@timed_state(duration=1, next_state='bin12')
-	def bin1(self):
-		self.intake.spin(self.spin_direction, same_direction=True)
+	@state()
+	def drive_around_first_bin(self):
+		self.at_goal_state = 'stop'
+		self.drive.set_encoder_goal(12 * 2)
+		self.next_state('drive_encoder')
 
 	@timed_state(duration=.85, next_state='tote2')
 	def bin12(self):
@@ -93,21 +90,21 @@ class ThreeTote(StatefulAutonomous):
 	@state()
 	def prep_turn(self):
 		self.drive.set_gyro_goal(90)
-		self.drive_mode = DriveMode.turn
 		self.at_goal_state = 'drive_towards_zone'
+		self.next_state('drive_gyro')
 
 	@state()
 	def drive_towards_zone(self):
-		self.drive_mode = DriveMode.drive
-		self.intake.spin(0)
 		self.drive.set_encoder_goal(4 * 12)
 		self.at_goal_state = 'leave_zone'
+		self.next_state('drive_encoder')
 
 	@state()
 	def leave_zone(self):
 		self.drive.set_encoder_goal(-4 * 12)
 		self.intake.open()
 		self.drop = True
+		self.next_state('drive_encoder')
 		self.at_goal_state = 'stop'
 
 	@state()

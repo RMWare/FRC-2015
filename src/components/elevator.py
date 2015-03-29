@@ -16,7 +16,8 @@ TICKS_PER_REVOLUTION = 2048
 
 
 class Setpoints(object):
-	BOTTOM = 1
+	DROP = 1
+	STACK = 2
 	BIN = 11
 	TOTE = 18
 	FIRST_TOTE = 18
@@ -30,7 +31,7 @@ class Elevator(Component):
 		self._motor = SyncGroup(Talon, constants.motor_elevator)
 		self._position_encoder = Encoder(*constants.encoder_elevator)
 		self._intake_photosensor = DigitalInput(constants.intake_photosensor)
-		self._dropper_piston = Solenoid(constants.solenoid_dropper)
+		self._stabilizer = Solenoid(constants.solenoid_dropper)
 		self._position_encoder.setDistancePerPulse((PITCH_DIAMETER * math.pi) / TICKS_PER_REVOLUTION)
 
 		# Trajectory controlling stuff
@@ -42,15 +43,15 @@ class Elevator(Component):
 		self._tote_first = False  # Override bin first to grab totes before anything else
 		self._should_drop = False  # Are we currently trying to get a bin ?
 
-		self._should_open_stabilizer = False  # Opens the stabilizer manually
+		self._open_stabilizer = True  # Opens the stabilizer manually
 		self._force_stack = False  # manually actuates the elevator down and up
 
-		quickdebug.add_tunables(Setpoints, ["BOTTOM", "BIN", "TOTE", "FIRST_TOTE"])
+		self._follower.set_goal(Setpoints.BIN)  # Base state
+
+		quickdebug.add_tunables(Setpoints, ["DROP", "STACK", "BIN", "TOTE", "FIRST_TOTE"])
 		quickdebug.add_printables(self, [
 			('position', self._position_encoder.getDistance),
-			('photosensor', self._intake_photosensor.get),
-			('at goal', self.at_goal),
-			"_has_bin", "_tote_count", "_tote_first"
+			"has_bin", "_tote_count", "_tote_first", "at_goal", "has_game_piece"
 		])
 
 	def stop(self):
@@ -58,27 +59,24 @@ class Elevator(Component):
 
 	def update(self):
 		goal = self._follower.get_goal()
-
-		if self.at_goal():
+		if self.at_goal:
 			if self._should_drop:  # Overrides everything else
-				self._follower.set_goal(Setpoints.BOTTOM)
-				self._dropper_piston.set(False)
+				self._follower.set_goal(Setpoints.DROP)
+				self._open_stabilizer = True
 			else:
-				if goal == Setpoints.BOTTOM:  # If we've just gone down to grab something
+				if goal == Setpoints.STACK:  # If we've just gone down to grab something
 					if self._tote_count == 0 and not self._has_bin and not self._tote_first:
 						self._has_bin = True  # Count the bin
 					else:  # We were waiting for a tote
 						self._tote_count += 1
 					self._follower.set_goal(Setpoints.TOTE)  # Go back up
-				elif self.has_game_piece() and self._tote_count < 5:  # If we try to stack a 6th tote it'll break the robot
-					self._follower.set_goal(Setpoints.BOTTOM)
-					if self._has_bin:  # Transfer!
+				elif self.has_game_piece and self._tote_count < 5:  # If we try to stack a 6th tote it'll break the robot
+					self._follower.set_goal(Setpoints.STACK)
+					if self.has_bin:  # Transfer!
 						if self._tote_count == 1:
-							self._dropper_piston.set(False)
-						elif self._tote_count == 2:
-							self._dropper_piston.set(True)
+							self._open_stabilizer = False
 				else:  # Wait for a game piece & raise the elevator
-					if self._tote_count == 0:
+					if self._tote_count == 0 and not self.has_bin:
 						if self._tote_first:
 							self._follower.set_goal(Setpoints.FIRST_TOTE)
 						else:
@@ -86,7 +84,11 @@ class Elevator(Component):
 					else:
 						self._follower.set_goal(Setpoints.TOTE)
 
-		self._motor.set(self._follower.calculate(self.position()))
+					if self._tote_count >= 2:
+						self._open_stabilizer = True
+
+		self._motor.set(self._follower.calculate(self.position))
+		self._stabilizer.set(self._open_stabilizer)
 		self._should_drop = False
 		self._tote_first = False
 
@@ -95,12 +97,15 @@ class Elevator(Component):
 		self._follower.set_goal(0)
 		self._follower._reset = True
 
+	@property
 	def has_game_piece(self):
 		return not self._intake_photosensor.get() or self._force_stack
 
+	@property
 	def position(self):
 		return self._position_encoder.getDistance()
 
+	@property
 	def at_goal(self):
 		return self._follower.trajectory_finished()
 
@@ -109,8 +114,20 @@ class Elevator(Component):
 		self._tote_count = 0
 		self._has_bin = False
 
-	def tote_first(self):
+	def stack_tote_first(self):
 		self._tote_first = True
 
 	def full(self):
-		return self._tote_count == 5 and self.has_game_piece()
+		return self._tote_count == 5 and self.has_game_piece
+
+	@property
+	def has_bin(self):
+		return self._has_bin
+
+	@property
+	def tote_first(self):
+		return self._tote_first
+
+	@property
+	def tote_count(self):
+		return self._tote_count
