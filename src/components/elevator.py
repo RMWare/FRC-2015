@@ -39,7 +39,7 @@ class Elevator(Component):
 		self._tote_count = 0  # Keep track of totes!
 		self._has_bin = False  # Do we have a bin on top?
 
-		self._waiting_for_bin = False  # Are we currently trying to get a bin ?
+		self._tote_first = False  # Override bin first to grab totes before anything else
 		self._should_drop = False  # Are we currently trying to get a bin ?
 
 		self._should_open_stabilizer = False  # Opens the stabilizer manually
@@ -50,7 +50,7 @@ class Elevator(Component):
 			('position', self._position_encoder.getDistance),
 			('photosensor', self._intake_photosensor.get),
 			('at goal', self.at_goal),
-			"_has_bin", "_tote_count"
+			"_has_bin", "_tote_count", "_tote_first"
 		])
 
 	def stop(self):
@@ -65,7 +65,7 @@ class Elevator(Component):
 				self._dropper_piston.set(False)
 			else:
 				if goal == Setpoints.BOTTOM:  # If we've just gone down to grab something
-					if self._waiting_for_bin:
+					if self._tote_count == 0 and not self._has_bin and not self._tote_first:
 						self._has_bin = True  # Count the bin
 					else:  # We were waiting for a tote
 						self._tote_count += 1
@@ -77,18 +77,18 @@ class Elevator(Component):
 							self._dropper_piston.set(False)
 						elif self._tote_count == 2:
 							self._dropper_piston.set(True)
-				else:  # Wait for more game pieces
-					if self._waiting_for_bin:
-						self._follower.set_goal(Setpoints.BIN)
-					else:
-						if self._tote_count == 0:
+				else:  # Wait for a game piece & raise the elevator
+					if self._tote_count == 0:
+						if self._tote_first:
 							self._follower.set_goal(Setpoints.FIRST_TOTE)
 						else:
-							self._follower.set_goal(Setpoints.TOTE)
+							self._follower.set_goal(Setpoints.BIN)
+					else:
+						self._follower.set_goal(Setpoints.TOTE)
 
 		self._motor.set(self._follower.calculate(self.position()))
-		self._waiting_for_bin = False
 		self._should_drop = False
+		self._tote_first = False
 
 	def reset_encoder(self):
 		self._position_encoder.reset()
@@ -106,12 +106,11 @@ class Elevator(Component):
 
 	def drop_stack(self):
 		self._should_drop = True
-		self._tote_count = 0   # Reset our counts
+		self._tote_count = 0
 		self._has_bin = False
 
-	def stack_bin(self):
-		if not self._has_bin:
-			self._waiting_for_bin = True
+	def tote_first(self):
+		self._tote_first = True
 
 	def full(self):
 		return self._tote_count == 5 and self.has_game_piece()

@@ -2,6 +2,7 @@
 import logging
 
 from wpilib import SampleRobot, Timer, SmartDashboard, LiveWindow, run
+
 from robotpy_ext.autonomous import AutonomousModeSelector
 
 from common.xbox import XboxController
@@ -65,7 +66,7 @@ class Tachyon(SampleRobot):
 		while self.isOperatorControl() and self.isEnabled():
 
 			if self.chandler.right_trigger():
-				self.elevator.stack_bin()
+				self.elevator.tote_first()
 				self.intake.open()
 				self.intake.spin(0.75)
 			else:
