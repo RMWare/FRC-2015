@@ -11,7 +11,7 @@ class LEDStrip(Component):
 		self.leds = 22
 		self.lastIndex = self.leds - 1
 		self.gamma = bytearray(256)
-		self.buffer = [0 for x in range(self.leds + 1)]
+		self.buffer = [0 for __ in range(self.leds + 1)]
 
 		self.masterBrightness = 1.0
 
