@@ -18,7 +18,7 @@ TICKS_PER_REVOLUTION = 2048
 class Setpoints(object):
 	DROP = 1
 	STACK = 2
-	BIN = 11
+	BIN = 15
 	TOTE = 18
 	FIRST_TOTE = 18
 
@@ -61,10 +61,10 @@ class Elevator(Component):
 		goal = self._follower.get_goal()
 		if self.at_goal:
 			if self._should_drop:  # Overrides everything else
+				self._follower._max_acc = 100  # Slow down on drop
 				self._follower.set_goal(Setpoints.DROP)
 				self._close_stabilizer = False
 				self._new_stack = True
-				self._follower._max_acc = 100  # Slow down on drop
 			else:
 				self._follower._max_acc = 240  # Normal speed
 				if self._new_stack:

@@ -22,7 +22,7 @@ class Drive(Component):
 	gyro_timer = Timer()
 
 	gyro_goal = 0
-	gyro_tolerance = 1  # Degrees
+	gyro_tolerance = 3  # Degrees
 
 	encoder_goal = 0
 	encoder_tolerance = 1  # Inches
@@ -44,12 +44,14 @@ class Drive(Component):
 		self.r_encoder.setDistancePerPulse((DISTANCE_PER_REV * REDUCTION) / TICKS_PER_REV)
 
 		self.gyro = Gyro(constants.gyro)
+		self._gyro_p = 0.035
 		quickdebug.add_printables(self, [
 			('gyro angle', self.gyro.getAngle),
 			('left encoder', self.l_encoder.getDistance),
 			('right encoder', self.r_encoder.getDistance),
 		    'left_pwm', 'right_pwm', 'encoder_goal'
 		])
+		quickdebug.add_tunables(self, '_gyro_p')
 
 	def update(self):
 		self.l_motor.set(self.left_pwm)
@@ -149,14 +151,14 @@ class Drive(Component):
 		self.gyro_goal = goal
 
 	def turn_gyro(self):
-		result = self.gyro_error() * 0.05
+		result = self.gyro_error() * self._gyro_p
 
 		self.left_pwm = result
 		self.right_pwm = -result
 
 	def at_gyro_goal(self):
 		on = abs(self.gyro_error()) < self.gyro_tolerance
-		if False and on:
+		if on:
 			if not self.gyro_timer.running:
 				self.gyro_timer.start()
 			if self.gyro_timer.hasPeriodPassed(.3):

@@ -66,17 +66,12 @@ class Tachyon(SampleRobot):
 
 			if self.chandler.right_trigger():
 				self.elevator.stack_tote_first()
-				self.intake.close()
 				self.intake.spin(1)
 			else:
 				if not self.elevator.has_bin:
 					self.intake.spin(.75)  # Intaking woo
-					if self.elevator.tote_count == 0:
-						self.intake.open()  # Only open for the first tote
 				else:  # If we have a bin, then just intake
 					self.intake.spin(0 if self.elevator.full() else 1)
-					if self.elevator.at_goal:
-						self.intake.close()
 
 			self.elevator._force_stack = self.chandler.a()
 
@@ -86,10 +81,9 @@ class Tachyon(SampleRobot):
 				self.elevator.drop_stack()
 
 			if self.chandler.right_bumper():
-				if not self.elevator.has_bin and self.elevator.tote_count == 0:
-					self.intake.close()
-				else:
-					self.intake.open()
+				self.intake.open()
+			else:
+				self.intake.close()
 
 			wheel = deadband(self.chandler.right_x(), .2)
 			throttle = -deadband(self.chandler.left_y(), .23) * 0.8

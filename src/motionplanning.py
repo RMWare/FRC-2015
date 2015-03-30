@@ -36,7 +36,7 @@ class TrajectoryFollower(object):
 		self._max_acc = 250
 		self._max_vel = 100000000000
 
-		quickdebug.add_tunables(self, ["_kp", "_ki", "_kd", "_kv", "_ka", "_max_acc", "_max_vel"])
+		quickdebug.add_tunables(self, ["_kp", "_ki", "_kd", "_kv", "_ka", "_max_vel"])
 		quickdebug.add_printables(self, ['_goal_position', '_error_sum', '_prev_error', '_setpoint',
 		                                 ('trajectory finished?', self.trajectory_finished)])
 
