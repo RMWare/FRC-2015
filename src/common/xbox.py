@@ -1,4 +1,4 @@
-import wpilib
+from wpilib import Joystick, Timer
 
 
 class XboxController(object):
@@ -14,7 +14,7 @@ class XboxController(object):
 			plugged into.
 		:type  port: int
 		"""
-		self.joy = wpilib.Joystick(port)
+		self.joy = Joystick(port)
 		self.debounce = DpadDebouncer()
 
 	def left_x(self):
@@ -159,24 +159,22 @@ class XboxController(object):
 	def rumble(self, left=None, right=None):
 		"""Sets the rumble amount on one/both side(s) of the controller"""
 		if left is not None:
-			self.joy.setRumble(wpilib.Joystick.RumbleType.kLeftRumble_val, left)
+			self.joy.setRumble(Joystick.RumbleType.kLeftRumble_val, left)
 		if right is not None:
-			self.joy.setRumble(wpilib.Joystick.RumbleType.kRightRumble_val, right)
+			self.joy.setRumble(Joystick.RumbleType.kRightRumble_val, right)
 
 class DpadDebouncer(object):
-
 	def __init__(self):
-		self.timer = wpilib.Timer
 		self.debounce_period = 0.5
 		self.last_input = -1
-		self.last_timestamp = self.timer.getFPGATimestamp()
+		self.last_timestamp = Timer.getFPGATimestamp()
 
 	def set_debounce_period(self, time):
 		self.debounce_period = time
 
 	def get(self, input):
 		if input == self.last_input:
-			time = self.timer.getFPGATimestamp()
+			time = Timer.getFPGATimestamp()
 			if time - self.last_timestamp <= self.debounce_period:
 				return -1
 			else:
@@ -184,6 +182,6 @@ class DpadDebouncer(object):
 				return input
 		else:
 			self.last_input = input
-			self.last_timestamp = self.timer.getFPGATimestamp()
+			self.last_timestamp = Timer.getFPGATimestamp()
 			return input
 
