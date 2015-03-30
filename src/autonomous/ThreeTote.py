@@ -36,7 +36,6 @@ class ThreeTote(StatefulAutonomous):
 
 	@state(first=True)
 	def start_and_turn(self):
-		self.elevator.add_tote()  # I know it's private but shush TODO
 		self.at_goal_state = 'drive_around_first_bin'
 		self.drive.set_gyro_goal(45)
 		self.next_state('drive_gyro')
@@ -55,7 +54,7 @@ class ThreeTote(StatefulAutonomous):
 
 	@state()
 	def drive_into_second_tote(self):
-		self.drive.set_encoder_goal(12*2)
+		self.drive.set_encoder_goal(12 * 2)
 		self.at_goal_state = 'stop'
 		self.next_state('drive_encoder')
 

@@ -1,6 +1,6 @@
 import logging
 import math
-from wpilib import Talon, Gyro, Encoder
+from wpilib import Talon, Gyro, Encoder, Timer
 from common import util, constants, quickdebug
 from common.syncgroup import SyncGroup
 from . import Component
@@ -19,6 +19,8 @@ class Drive(Component):
 	sensitivity = 1.5
 
 	# Gyro & encoder stuff
+	gyro_timer = Timer()
+
 	gyro_goal = 0
 	gyro_tolerance = 5  # Degrees
 
@@ -140,9 +142,10 @@ class Drive(Component):
 		r_error = self.encoder_goal - self.r_encoder.getDistance()
 		return l_error < self.encoder_tolerance and r_error < self.encoder_tolerance
 
-
 	# Stuff for Gyro driving
 	def set_gyro_goal(self, goal):
+		self.gyro_timer.stop()
+		self.gyro_timer.reset()
 		self.gyro_goal = goal
 
 	def turn_gyro(self):
@@ -151,7 +154,13 @@ class Drive(Component):
 		self.right_pwm = -result
 
 	def at_gyro_goal(self):
-		return abs(self.gyro_error()) < self.gyro_tolerance
+		on = abs(self.gyro_error()) < self.gyro_tolerance
+		if on:
+			if not self.gyro_timer.running:
+				self.gyro_timer.start()
+			if self.gyro_timer.hasPeriodPassed(1):
+					return True
+		return False
 
 	def gyro_error(self):
 		"""
