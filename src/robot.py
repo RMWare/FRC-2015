@@ -103,11 +103,11 @@ class Tachyon(SampleRobot):
 			self.drive.cheesy_drive(wheel, throttle * 0.75, self.chandler.left_bumper())
 
 			if self.meet.dpad() == 0:
-				# TODO figure out what angles are directions on the d-pad and apply the following
-				# https://robotpy-wpilib-utilities.readthedocs.org/en/latest/robotpy_ext.control.html#module-robotpy_ext.control.button_debouncer
-				# Up button should increment elevator tote count, down should decrement
-				# Right should toggle the "_has_bin" variable
-				pass
+				self.elevator._tote_count += 1
+			elif self.meet.dpad() == 180:
+				self.elevator._tote_count -= 1
+			elif self.meet.dpad() == 90:
+				self.elevator._has_bin = not self.elevator._has_bin
 
 			self.update()
 			self.update_networktables()
