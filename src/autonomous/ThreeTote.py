@@ -4,6 +4,7 @@ from robotpy_ext.autonomous import StatefulAutonomous, state, timed_state
 # Because python is dynamic and can do crazy crap, some IDEs complain that the subsystems
 # aren't accessible in this object. They are, and the above comment fixes it for IntelliJ IDEA
 
+
 class ThreeTote(StatefulAutonomous):
 	MODE_NAME = 'Three totes in auto zone'
 	DEFAULT = True
@@ -34,21 +35,29 @@ class ThreeTote(StatefulAutonomous):
 			self.drive.turn_gyro()
 
 	@state(first=True)
-	def stack_first_and_turn(self):
-		self.elevator._tote_count = 1  # I know it's private but shush TODO
+	def start_and_turn(self):
+		self.elevator.add_tote()  # I know it's private but shush TODO
 		self.at_goal_state = 'drive_around_first_bin'
 		self.drive.set_gyro_goal(45)
 		self.next_state('drive_gyro')
 
 	@state()
 	def drive_around_first_bin(self):
-		self.at_goal_state = 'stop'
+		self.at_goal_state = 'turn_around_first_bin'
 		self.drive.set_encoder_goal(12 * 2)
 		self.next_state('drive_encoder')
 
-	@timed_state(duration=.85, next_state='tote2')
-	def bin12(self):
-		self.intake.spin(-self.spin_direction, same_direction=True)
+	@state()
+	def turn_around_first_bin(self):
+		self.at_goal_state = 'drive_into_second_tote'
+		self.drive.set_gyro_goal(-45)
+		self.next_state('drive_gyro')
+
+	@state()
+	def drive_into_second_tote(self):
+		self.drive.set_encoder_goal(12*2)
+		self.at_goal_state = 'stop'
+		self.next_state('drive_encoder')
 
 	@timed_state(duration=.4, next_state='tote21')
 	def tote2(self):

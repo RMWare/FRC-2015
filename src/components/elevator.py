@@ -39,11 +39,11 @@ class Elevator(Component):
 
 		self._tote_count = 0  # Keep track of totes!
 		self._has_bin = False  # Do we have a bin on top?
-
+		self._new_stack = True  # starting a new stack?
 		self._tote_first = False  # Override bin first to grab totes before anything else
 		self._should_drop = False  # Are we currently trying to get a bin ?
 
-		self._open_stabilizer = True  # Opens the stabilizer manually
+		self._close_stabilizer = True  # Opens the stabilizer manually
 		self._force_stack = False  # manually actuates the elevator down and up
 
 		self._follower.set_goal(Setpoints.BIN)  # Base state
@@ -62,8 +62,17 @@ class Elevator(Component):
 		if self.at_goal:
 			if self._should_drop:  # Overrides everything else
 				self._follower.set_goal(Setpoints.DROP)
-				self._open_stabilizer = True
+				self._close_stabilizer = False
+				self._new_stack = True
+				self._follower._max_acc = 100  # Slow down on drop
 			else:
+				self._follower._max_acc = 240  # Normal speed
+				if self._new_stack:
+					self._new_stack = False
+					self._close_stabilizer = True
+					self._tote_count = 0
+					self._has_bin = False
+
 				if goal == Setpoints.STACK:  # If we've just gone down to grab something
 					if self._tote_count == 0 and not self._has_bin and not self._tote_first:
 						self._has_bin = True  # Count the bin
@@ -74,7 +83,7 @@ class Elevator(Component):
 					self._follower.set_goal(Setpoints.STACK)
 					if self.has_bin:  # Transfer!
 						if self._tote_count == 1:
-							self._open_stabilizer = False
+							self._close_stabilizer = False
 				else:  # Wait for a game piece & raise the elevator
 					if self._tote_count == 0 and not self.has_bin:
 						if self._tote_first:
@@ -85,10 +94,10 @@ class Elevator(Component):
 						self._follower.set_goal(Setpoints.TOTE)
 
 					if self._tote_count >= 2:
-						self._open_stabilizer = True
+						self._close_stabilizer = True
 
 		self._motor.set(self._follower.calculate(self.position))
-		self._stabilizer.set(self._open_stabilizer)
+		self._stabilizer.set(self._close_stabilizer)
 		self._should_drop = False
 		self._tote_first = False
 
@@ -111,8 +120,6 @@ class Elevator(Component):
 
 	def drop_stack(self):
 		self._should_drop = True
-		self._tote_count = 0
-		self._has_bin = False
 
 	def stack_tote_first(self):
 		self._tote_first = True
@@ -131,3 +138,12 @@ class Elevator(Component):
 	@property
 	def tote_count(self):
 		return self._tote_count
+
+	def add_tote(self, number=1):
+		self._tote_count = max(0, min(5, self._tote_count + number))
+
+	def remove_tote(self):
+		self.add_tote(-1)
+
+	def set_bin(self, bin_):
+		self._has_bin = bin_

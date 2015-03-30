@@ -102,11 +102,14 @@ class Tachyon(SampleRobot):
 
 			dpad = self.meet.dpad()  # You can only call it once per loop, bcus dbouncing
 			if dpad == 0 and self.elevator.tote_count < 6:
-				self.elevator._tote_count += 1
+				self.elevator.add_tote()
 			elif dpad == 180 and self.elevator.tote_count > 0:
-				self.elevator._tote_count -= 1
+				self.elevator.remove_tote()
 			elif dpad == 90:
-				self.elevator._has_bin = not self.elevator.has_bin
+				self.elevator.set_bin(not self.elevator.has_bin)
+
+			if self.meet.start():
+				self.elevator._new_stack = True
 
 			self.update()
 			self.update_networktables()
