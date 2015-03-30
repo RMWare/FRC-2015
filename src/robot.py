@@ -95,7 +95,7 @@ class Tachyon(SampleRobot):
 			elif self.meet.dpad() == 180:
 				self.elevator._tote_count -= 1
 			elif self.meet.dpad() == 90:
-				self.elevator._has_bin = self.toggle(self.elevator._has_bin)
+				self.elevator._has_bin = not self.elevator._has_bin
 
 			self.update()
 			self.update_networktables()
@@ -124,12 +124,6 @@ class Tachyon(SampleRobot):
 		if not self.nt_timer.hasPeriodPassed(0.2):  # we don't need to update every cycle
 			return
 		quickdebug.sync()
-
-	def toggle(self, var):
-		if var == False:
-			return True
-		else:
-			return False
 
 
 if __name__ == "__main__":

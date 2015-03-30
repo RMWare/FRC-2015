@@ -14,8 +14,8 @@ class XboxController(object):
 			plugged into.
 		:type  port: int
 		"""
-
 		self.joy = wpilib.Joystick(port)
+		self.debounce = DpadDebouncer()
 
 	def left_x(self):
 		"""Get the left stick X axis
@@ -49,7 +49,8 @@ class XboxController(object):
 		:returns: The angle of the D-Pad in degrees, or -1 if the D-Pad is not pressed.
 		:rtype: float
 		"""
-		return self.joy.getPOV()
+
+		return self.debounce(self.joy.getPOV())
 
 	def right_x(self):
 		"""Get the right stick X axis
@@ -161,3 +162,28 @@ class XboxController(object):
 			self.joy.setRumble(wpilib.Joystick.RumbleType.kLeftRumble_val, left)
 		if right is not None:
 			self.joy.setRumble(wpilib.Joystick.RumbleType.kRightRumble_val, right)
+
+class DpadDebouncer(object):
+
+	def __init__(self):
+		self.timer = wpilib.Timer
+		self.debounce_period = 0.5
+		self.last_input = -1
+		self.last_timestamp = self.timer.getFPGATimestamp()
+
+	def set_debounce_period(self, time):
+		self.debounce_period = time
+
+	def get(self, input):
+		if input == self.last_input:
+			time = self.timer.getFPGATimestamp()
+			if time - self.last_timestamp <= self.debounce_period:
+				return -1
+			else:
+				self.last_timestamp = time
+				return input
+		else:
+			self.last_input = input
+			self.last_timestamp = self.timer.getFPGATimestamp()
+			return input
+
