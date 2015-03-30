@@ -22,7 +22,7 @@ class Drive(Component):
 	gyro_timer = Timer()
 
 	gyro_goal = 0
-	gyro_tolerance = 5  # Degrees
+	gyro_tolerance = 1  # Degrees
 
 	encoder_goal = 0
 	encoder_tolerance = 1  # Inches
@@ -134,13 +134,13 @@ class Drive(Component):
 		l_error = self.encoder_goal - self.l_encoder.getDistance()
 		r_error = self.encoder_goal - self.r_encoder.getDistance()
 
-		self.left_pwm = l_error
-		self.right_pwm = r_error
+		self.left_pwm =  util.limit(l_error, 0.5)
+		self.right_pwm = util.limit(r_error, 0.5)
 
 	def at_encoder_goal(self):
 		l_error = self.encoder_goal - self.l_encoder.getDistance()
 		r_error = self.encoder_goal - self.r_encoder.getDistance()
-		return l_error < self.encoder_tolerance and r_error < self.encoder_tolerance
+		return abs(l_error) < self.encoder_tolerance and abs(r_error) < self.encoder_tolerance
 
 	# Stuff for Gyro driving
 	def set_gyro_goal(self, goal):
@@ -149,16 +149,17 @@ class Drive(Component):
 		self.gyro_goal = goal
 
 	def turn_gyro(self):
-		result = self.gyro_error() / 60
+		result = self.gyro_error() * 0.05
+
 		self.left_pwm = result
 		self.right_pwm = -result
 
 	def at_gyro_goal(self):
 		on = abs(self.gyro_error()) < self.gyro_tolerance
-		if on:
+		if False and on:
 			if not self.gyro_timer.running:
 				self.gyro_timer.start()
-			if self.gyro_timer.hasPeriodPassed(1):
+			if self.gyro_timer.hasPeriodPassed(.3):
 					return True
 		return False
 

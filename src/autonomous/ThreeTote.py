@@ -15,10 +15,10 @@ class ThreeTote(StatefulAutonomous):
 	at_goal_state = ''
 
 	def on_iteration(self, tm):
+		self.elevator.stack_tote_first()
 		if self.drop:
 			self.elevator.drop_stack()
 		super(ThreeTote, self).on_iteration(tm)
-
 
 	@state()
 	def drive_encoder(self):
@@ -43,57 +43,41 @@ class ThreeTote(StatefulAutonomous):
 	@state()
 	def drive_around_first_bin(self):
 		self.at_goal_state = 'turn_around_first_bin'
-		self.drive.set_encoder_goal(12 * 2)
+		self.drive.set_encoder_goal(30)
 		self.next_state('drive_encoder')
 
 	@state()
 	def turn_around_first_bin(self):
+		self.at_goal_state = 'drive_past_first_bin'
+		self.drive.set_gyro_goal(0)
+		self.next_state('drive_gyro')
+
+	@state()
+	def drive_past_first_bin(self):
+		self.at_goal_state = 'turn_towards_second_tote'
+		self.drive.set_encoder_goal(30)
+		self.next_state('drive_encoder')
+
+	@state()
+	def turn_towards_second_tote(self):
 		self.at_goal_state = 'drive_into_second_tote'
 		self.drive.set_gyro_goal(-45)
 		self.next_state('drive_gyro')
 
 	@state()
 	def drive_into_second_tote(self):
-		self.drive.set_encoder_goal(12 * 2)
-		self.at_goal_state = 'stop'
+		self.intake.spin(1)
+		self.intake.open()
+		self.drive.set_encoder_goal(30)
+		self.at_goal_state = 'grab_tote_and_move_back'
 		self.next_state('drive_encoder')
 
-	@timed_state(duration=.4, next_state='tote21')
-	def tote2(self):
-		self.elevator.stack()
-		self.intake.spin(1)
-		self.intake.open()
-
-	@timed_state(duration=.6, next_state='bin2')
-	def tote21(self):
+	@state()
+	def grab_tote_and_move_back(self):
+		self.at_goal_state = 'stop'
 		self.intake.close()
-
-	@timed_state(duration=1, next_state='bin21')
-	def bin2(self):
-		self.intake.spin(self.spin_direction, same_direction=True)
-
-	@timed_state(duration=1, next_state='tote3')
-	def bin21(self):
-		self.intake.spin(-self.spin_direction, same_direction=True)
-
-	@timed_state(duration=.4, next_state='tote31')
-	def tote3(self):
-		self.elevator.stack()
-		self.intake.spin(1)
-		self.intake.open()
-
-	@timed_state(duration=.6, next_state='prep_turn')
-	def tote31(self):
-		self.intake.close()
-
-	@timed_state(duration=1, next_state='bin31')
-	def bin3(self):
-		self.intake.close()
-		self.intake.spin(self.spin_direction, same_direction=True)
-
-	@timed_state(duration=1, next_state='prep_turn')
-	def bin31(self):
-		self.intake.spin(-self.spin_direction, same_direction=True)
+		self.drive.set_encoder_goal(-30)
+		self.next_state('drive_encoder')
 
 	@state()
 	def prep_turn(self):
