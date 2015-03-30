@@ -1,3 +1,7 @@
+"""
+This is a work-in-progress implementation of the driverstation software in python.
+"""
+
 from binascii import crc32
 import struct
 import socket
@@ -5,14 +9,14 @@ from twisted.internet.task import LoopingCall
 
 # These are all unused in the code currently
 """Mode Bits
-	RESET_BIT = 0x80;
-	ESTOP_BIT = 0x40;
-	ENABLED_BIT = 0x20;
-	AUTONOMOUS_BIT = 0x10;
-	FMS_ATTATCHED = 0x08;
-	RESYNCH = 0x04;
-	TEST_MODE_BIT = 0x02;
-	CHECK_VERSIONS_BIT = 0x01;
+	RESET_BIT = 0x80
+	ESTOP_BIT = 0x40
+	ENABLED_BIT = 0x20
+	AUTONOMOUS_BIT = 0x10
+	FMS_ATTATCHED = 0x08
+	RESYNCH = 0x04
+	TEST_MODE_BIT = 0x02
+	CHECK_VERSIONS_BIT = 0x01
 """
 RESET_BIT = 0x80
 FMS_ATTACHED = 0x08

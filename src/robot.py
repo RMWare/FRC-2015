@@ -7,7 +7,7 @@ from robotpy_ext.autonomous import AutonomousModeSelector
 
 from common.xbox import XboxController
 from common.util import deadband
-from components import drive, intake, pneumatics, elevator, leds
+from components import drive, intake, pneumatics, elevator
 from common import delay, quickdebug
 
 
@@ -31,14 +31,12 @@ class Tachyon(SampleRobot):
 		self.pneumatics = pneumatics.Pneumatics()
 		self.intake = intake.Intake()
 		self.elevator = elevator.Elevator()
-		# self.leds = leds.LEDStrip()
 
 		self.components = {
 			'drive': self.drive,
 			'pneumatics': self.pneumatics,
 			'intake': self.intake,
 			'elevator': self.elevator,
-		    # 'leds': self.leds,
 		}
 
 		self.nt_timer = Timer()  # timer for SmartDashboard update so we don't use all our bandwidth
@@ -102,12 +100,13 @@ class Tachyon(SampleRobot):
 
 			self.drive.cheesy_drive(wheel, throttle * 0.75, self.chandler.left_bumper())
 
-			if self.meet.dpad() == 0:
+			dpad = self.meet.dpad()  # You can only call it once per loop, bcus dbouncing
+			if dpad == 0 and self.elevator.tote_count < 6:
 				self.elevator._tote_count += 1
-			elif self.meet.dpad() == 180:
+			elif dpad == 180 and self.elevator.tote_count > 0:
 				self.elevator._tote_count -= 1
-			elif self.meet.dpad() == 90:
-				self.elevator._has_bin = not self.elevator._has_bin
+			elif dpad == 90:
+				self.elevator._has_bin = not self.elevator.has_bin
 
 			self.update()
 			self.update_networktables()

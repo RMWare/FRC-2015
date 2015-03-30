@@ -50,7 +50,7 @@ class XboxController(object):
 		:rtype: float
 		"""
 
-		return self.debounce(self.joy.getPOV())
+		return self.debounce.get(self.joy.getPOV())
 
 	def right_x(self):
 		"""Get the right stick X axis
@@ -162,6 +162,7 @@ class XboxController(object):
 			self.joy.setRumble(Joystick.RumbleType.kLeftRumble_val, left)
 		if right is not None:
 			self.joy.setRumble(Joystick.RumbleType.kRightRumble_val, right)
+
 
 class DpadDebouncer(object):
 	def __init__(self):
