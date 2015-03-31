@@ -19,8 +19,8 @@ class Setpoints(object):
 	DROP = 1
 	STACK = 2
 	BIN = 15
-	TOTE = 18
-	FIRST_TOTE = 18
+	TOTE = 17
+	FIRST_TOTE = 7
 
 
 class Elevator(Component):
@@ -66,7 +66,7 @@ class Elevator(Component):
 				self._close_stabilizer = False
 				self._new_stack = True
 			else:
-				self._follower._max_acc = 240  # Normal speed
+				self._follower._max_acc = 210  # Normal speed
 				if self._new_stack:
 					self._new_stack = False
 					self._close_stabilizer = True

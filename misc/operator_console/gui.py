@@ -39,7 +39,7 @@ def update():
     if elevator.getBoolean('has_game_piece', False):
         totes[-1].configure(image=tote_on)
 
-    root.after(10, update)
+    root.after(100, update)
 
 if __name__ == "__main__":
     can = Label(root, image=can_off)

@@ -75,22 +75,21 @@ class Tachyon(SampleRobot):
 
 			self.elevator._force_stack = self.chandler.a()
 
-			if self.chandler.left_trigger():  # If we're trying to drop the stack
-				self.intake.spin(0)
-				self.intake.open()
-				self.elevator.drop_stack()
-
 			if self.chandler.right_bumper():
 				self.intake.open()
 			else:
 				self.intake.close()
 
+			if self.chandler.left_trigger():  # If we're trying to drop the stack
+				self.intake.spin(0)
+				self.intake.open()
+				self.elevator.drop_stack()
+
 			wheel = deadband(self.chandler.right_x(), .2)
 			throttle = -deadband(self.chandler.left_y(), .23) * 0.8
 
-			if self.chandler.right_pressed():
-				throttle *= 0.4
-				wheel *= 0.4
+			if self.chandler.b():
+				wheel *= 0.3
 
 			self.drive.cheesy_drive(wheel, throttle * 0.75, self.chandler.left_bumper())
 
@@ -104,6 +103,7 @@ class Tachyon(SampleRobot):
 
 			if self.meet.start():
 				self.elevator._new_stack = True
+
 
 			self.update()
 			self.update_networktables()
