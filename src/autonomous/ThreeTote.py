@@ -1,4 +1,4 @@
-from robotpy_ext.autonomous import StatefulAutonomous, state
+from robotpy_ext.autonomous import StatefulAutonomous, state, timed_state
 
 ## noinspect on PyUnresolvedReferences
 # Because python is dynamic and can do crazy crap, some IDEs complain that the subsystems
@@ -15,7 +15,7 @@ class ThreeTote(StatefulAutonomous):
 	at_goal_state = ''
 
 	def on_iteration(self, tm):
-		self.elevator.stack_tote_first()
+		self.elevator.auton()
 		if self.drop:
 			self.elevator.drop_stack()
 		super(ThreeTote, self).on_iteration(tm)
@@ -34,79 +34,72 @@ class ThreeTote(StatefulAutonomous):
 		else:
 			self.drive.turn_gyro()
 
-	@state(first=True)
-	def start_and_turn(self):
-		self.at_goal_state = 'drive_around_first_bin'
-		self.drive.set_gyro_goal(45)
-		self.next_state('drive_gyro')
-
-	@state()
-	def drive_around_first_bin(self):
-		self.at_goal_state = 'turn_around_first_bin'
-		self.drive.set_encoder_goal(30)
-		self.next_state('drive_encoder')
-
-	@state()
-	def turn_around_first_bin(self):
-		self.at_goal_state = 'drive_past_first_bin'
-		self.drive.set_gyro_goal(-25)
-		self.next_state('drive_gyro')
-
-	@state()
-	def drive_past_first_bin(self):
+	@timed_state(duration=1, first=True, next_state='nudge')
+	def start(self):
 		self.intake.open()
-		self.at_goal_state = 'drive_into_second_tote'
-		self.drive.set_encoder_goal(35)
-		self.next_state('drive_encoder')
-		self.intake.spin(1)
 
 	@state()
-	def drive_into_second_tote(self):
-		self.drive.set_encoder_goal(25)
-		self.at_goal_state = 'grab_tote_and_move_back'
-		self.next_state('drive_encoder')
-
-	@state()
-	def grab_tote_and_move_back(self):
-		self.at_goal_state = 'straighten'
+	def nudge(self):
 		self.intake.close()
-		self.drive.set_encoder_goal(-55)
+		self.drive.set_encoder_goal(2)
+		self.intake.spin(-1, True)
+		self.at_goal_state = 'knock_first_bin'
 		self.next_state('drive_encoder')
 
 	@state()
-	def straighten(self):
+	def knock_first_bin(self):
+		self.at_goal_state = 'realign_first_bin'
+		self.drive.set_gyro_goal(50)
+		self.intake.spin(1)
+		self.next_state('drive_gyro')
+
+	@state()
+	def realign_first_bin(self):
+		self.at_goal_state = 'drive_towards_second_tote'
+		self.drive.set_gyro_goal(0)
+		self.intake.spin(1, True)
+		self.next_state('drive_gyro')
+
+	@state()
+	def drive_towards_second_tote(self):
+		self.intake.spin(1)
+		self.intake.open()
+		self.at_goal_state = 'nudge_second_tote'
+		self.drive.set_encoder_goal(72)
+		self.next_state('drive_encoder')
+
+	@state()
+	def nudge_second_tote(self):
+		self.intake.spin(1)
+		self.intake.close()
+		self.at_goal_state = 'knock_second_bin'
+		self.drive.set_encoder_goal(2)
+		self.next_state('drive_encoder')
+
+	@state()
+	def knock_second_bin(self):
+		self.at_goal_state = 'realign_second_bin'
+		self.drive.set_gyro_goal(50)
+		self.next_state('drive_gyro')
+
+	@state()
+	def realign_second_bin(self):
 		self.at_goal_state = 'drive_towards_last_tote'
+		self.intake.spin(-1, True)
 		self.drive.set_gyro_goal(0)
 		self.next_state('drive_gyro')
 
 	@state()
 	def drive_towards_last_tote(self):
-		self.at_goal_state = 'turn_towards_last_tote'
-		self.intake.open()
-		self.drive.set_encoder_goal(100)
-		self.next_state('drive_encoder')
-
-	@state()
-	def turn_towards_last_tote(self):
-		self.at_goal_state = 'drive_into_last_tote'
-		self.drive.set_gyro_goal(-20)
-		self.next_state('drive_gyro')
-
-	@state()
-	def drive_into_last_tote(self):
-		self.at_goal_state = 'drive_out_of_last_tote'
-		self.drive.set_encoder_goal(40)
-		self.next_state('drive_encoder')
-
-	@state()
-	def drive_out_of_last_tote(self):
-		self.intake.close()
 		self.at_goal_state = 'turn_towards_zone'
-		self.drive.set_encoder_goal(-40)
+		self.drive.set_encoder_goal(55)
 		self.next_state('drive_encoder')
+		self.intake.spin(1)
+		self.intake.open()
 
 	@state()
 	def turn_towards_zone(self):
+		self.intake.close()
 		self.drive.set_gyro_goal(90)
 		self.at_goal_state = 'drive_towards_zone'
 		self.next_state('drive_gyro')
@@ -114,16 +107,16 @@ class ThreeTote(StatefulAutonomous):
 	@state()
 	def drive_towards_zone(self):
 		self.drive.set_encoder_goal(6 * 12)
-		self.at_goal_state = 'stop'
+		self.at_goal_state = 'leave_zone'
 		self.next_state('drive_encoder')
-	#
-	# @state()
-	# def leave_zone(self):
-	# 	self.drive.set_encoder_goal(-6 * 12)
-	# 	self.intake.open()
-	# 	self.drop = True
-	# 	self.next_state('drive_encoder')
-	# 	self.at_goal_state = 'stop'
+
+	@state()
+	def leave_zone(self):
+		self.drive.set_encoder_goal(-5 * 12)
+		self.intake.open()
+		self.drop = True
+		self.next_state('drive_encoder')
+		self.at_goal_state = 'stop'
 
 	@state()
 	def stop(self):

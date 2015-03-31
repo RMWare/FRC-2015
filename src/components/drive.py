@@ -22,7 +22,7 @@ class Drive(Component):
 	gyro_timer = Timer()
 
 	gyro_goal = 0
-	gyro_tolerance = 3  # Degrees
+	gyro_tolerance = 5  # Degrees
 
 	encoder_goal = 0
 	encoder_tolerance = 1  # Inches
@@ -44,7 +44,7 @@ class Drive(Component):
 		self.r_encoder.setDistancePerPulse((DISTANCE_PER_REV * REDUCTION) / TICKS_PER_REV)
 
 		self.gyro = Gyro(constants.gyro)
-		self._gyro_p = 0.035
+		self._gyro_p = 0.025
 		quickdebug.add_printables(self, [
 			('gyro angle', self.gyro.getAngle),
 			('left encoder', self.l_encoder.getDistance),
