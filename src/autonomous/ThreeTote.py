@@ -1,5 +1,4 @@
 from robotpy_ext.autonomous import StatefulAutonomous, state, timed_state
-
 ## noinspect on PyUnresolvedReferences
 # Because python is dynamic and can do crazy crap, some IDEs complain that the subsystems
 # aren't accessible in this object. They are, and the above comment fixes it for IntelliJ IDEA
@@ -35,6 +34,7 @@ class ThreeTote(StatefulAutonomous):
 	@timed_state(duration=1, first=True, next_state='nudge')
 	def start(self):
 		self.intake.open()
+
 
 	@state()
 	def nudge(self):

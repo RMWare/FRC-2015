@@ -42,6 +42,7 @@ class Tachyon(SampleRobot):
 		self.nt_timer = Timer()  # timer for SmartDashboard update so we don't use all our bandwidth
 		self.nt_timer.start()
 		self.autonomous_modes = AutonomousModeSelector('autonomous', self.components)
+		quickdebug.add_printables(self, ('match_time', Timer.getMatchTime))
 		quickdebug.init()
 
 	def autonomous(self):
