@@ -73,7 +73,7 @@ class Tachyon(SampleRobot):
 				else:  # If we have a bin, then just intake
 					self.intake.spin(0 if self.elevator.full() else 1)
 
-			self.elevator._force_stack = self.chandler.a()
+			self.elevator.force_stack = self.chandler.a()
 
 			if self.chandler.right_bumper():
 				self.intake.open()

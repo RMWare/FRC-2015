@@ -16,8 +16,6 @@ class ThreeTote(StatefulAutonomous):
 
 	def on_iteration(self, tm):
 		self.elevator.auton()
-		if self.drop:
-			self.elevator.drop_stack()
 		super(ThreeTote, self).on_iteration(tm)
 
 	@state()
@@ -56,7 +54,7 @@ class ThreeTote(StatefulAutonomous):
 	@state()
 	def realign_first_bin(self):
 		self.at_goal_state = 'drive_towards_second_tote'
-		self.drive.set_gyro_goal(0)
+		self.drive.set_gyro_goal(1)
 		self.intake.spin(1, True)
 		self.next_state('drive_gyro')
 
@@ -64,16 +62,21 @@ class ThreeTote(StatefulAutonomous):
 	def drive_towards_second_tote(self):
 		self.intake.spin(1)
 		self.intake.open()
-		self.at_goal_state = 'nudge_second_tote'
+		self.at_goal_state = 'pause'
 		self.drive.set_encoder_goal(72)
 		self.next_state('drive_encoder')
 
-	@state()
-	def nudge_second_tote(self):
+	@timed_state(duration=1, next_state='nudge_second_tote')
+	def pause(self):
+		self.drive.tank_drive(0, 0)
 		self.intake.spin(1)
 		self.intake.close()
+		pass
+
+	@state()
+	def nudge_second_tote(self):
 		self.at_goal_state = 'knock_second_bin'
-		self.drive.set_encoder_goal(2)
+		self.drive.set_encoder_goal(5)
 		self.next_state('drive_encoder')
 
 	@state()
@@ -86,13 +89,13 @@ class ThreeTote(StatefulAutonomous):
 	def realign_second_bin(self):
 		self.at_goal_state = 'drive_towards_last_tote'
 		self.intake.spin(-1, True)
-		self.drive.set_gyro_goal(0)
+		self.drive.set_gyro_goal(1)
 		self.next_state('drive_gyro')
 
 	@state()
 	def drive_towards_last_tote(self):
 		self.at_goal_state = 'turn_towards_zone'
-		self.drive.set_encoder_goal(55)
+		self.drive.set_encoder_goal(75)
 		self.next_state('drive_encoder')
 		self.intake.spin(1)
 		self.intake.open()
@@ -107,14 +110,19 @@ class ThreeTote(StatefulAutonomous):
 	@state()
 	def drive_towards_zone(self):
 		self.drive.set_encoder_goal(6 * 12)
-		self.at_goal_state = 'leave_zone'
+		self.at_goal_state = 'drop'
 		self.next_state('drive_encoder')
+
+	@timed_state(duration=2, next_state='leave_zone')
+	def drop(self):
+		self.drive.tank_drive(0, 0)
+		self.intake.open()
+		self.elevator.drop_stack()
 
 	@state()
 	def leave_zone(self):
-		self.drive.set_encoder_goal(-5 * 12)
-		self.intake.open()
-		self.drop = True
+		self.elevator.drop_stack()
+		self.drive.set_encoder_goal(-4 * 12)
 		self.next_state('drive_encoder')
 		self.at_goal_state = 'stop'
 
