@@ -8,8 +8,6 @@ class ThreeTote(StatefulAutonomous):
 	MODE_NAME = 'Three totes in auto zone'
 	DEFAULT = True
 
-	drop = False
-
 	spin_direction = -1
 	at_goal_state = ''
 
@@ -50,7 +48,7 @@ class ThreeTote(StatefulAutonomous):
 	@state()
 	def realign_first_bin(self):
 		self.at_goal_state = 'drive_towards_second_tote'
-		self.drive.set_gyro_goal(1)
+		self.drive.set_gyro_goal(3)
 		self.intake.spin(1, True)
 		self.next_state('drive_gyro')
 
@@ -59,10 +57,10 @@ class ThreeTote(StatefulAutonomous):
 		self.intake.spin(1)
 		self.intake.open()
 		self.at_goal_state = 'pause'
-		self.drive.set_encoder_goal(72)
+		self.drive.set_encoder_goal(74)
 		self.next_state('drive_encoder')
 
-	@timed_state(duration=1, next_state='nudge_second_tote')
+	@timed_state(duration=0.3, next_state='nudge_second_tote')
 	def pause(self):
 		self.drive.tank_drive(0, 0)
 		self.intake.spin(1)
@@ -85,7 +83,7 @@ class ThreeTote(StatefulAutonomous):
 	def realign_second_bin(self):
 		self.at_goal_state = 'drive_towards_last_tote'
 		self.intake.spin(-1, True)
-		self.drive.set_gyro_goal(1)
+		self.drive.set_gyro_goal(3)
 		self.next_state('drive_gyro')
 
 	@state()
@@ -109,7 +107,7 @@ class ThreeTote(StatefulAutonomous):
 		self.at_goal_state = 'drop'
 		self.next_state('drive_encoder')
 
-	@timed_state(duration=2, next_state='leave_zone')
+	@timed_state(duration=0.3, next_state='stop')
 	def drop(self):
 		self.drive.tank_drive(0, 0)
 		self.intake.open()
@@ -124,4 +122,7 @@ class ThreeTote(StatefulAutonomous):
 
 	@state()
 	def stop(self):
+		self.intake.close()
+		self.intake.spin(-.5)
+		self.elevator.drop_stack()
 		self.drive.tank_drive(0, 0)

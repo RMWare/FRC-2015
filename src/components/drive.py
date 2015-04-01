@@ -24,7 +24,7 @@ class Drive(Component):
 	driving_encoder = False
 
 	gyro_goal = 0
-	gyro_tolerance = 5  # Degrees
+	gyro_tolerance = 2  # Degrees
 
 	encoder_goal = 0
 	encoder_tolerance = 1  # Inches
@@ -46,14 +46,16 @@ class Drive(Component):
 		self.r_encoder.setDistancePerPulse((DISTANCE_PER_REV * REDUCTION) / TICKS_PER_REV)
 
 		self.gyro = Gyro(constants.gyro)
-		self._gyro_p = 0.025
+		self._gyro_p = 0.12
+		self._gyro_d = 0.005
+		self._prev_gyro_error = 0
 		quickdebug.add_printables(self, [
 			('gyro angle', self.gyro.getAngle),
 			('left encoder', self.l_encoder.getDistance),
 			('right encoder', self.r_encoder.getDistance),
 		    'left_pwm', 'right_pwm', 'encoder_goal'
 		])
-		quickdebug.add_tunables(self, '_gyro_p')
+		quickdebug.add_tunables(self, ['_gyro_p', '_gyro_d'])
 
 	def stop(self):
 		"""Disables EVERYTHING. Only use in case of critical failure."""
@@ -136,6 +138,8 @@ class Drive(Component):
 		l_error = self.encoder_goal - self.l_encoder.getDistance()
 		r_error = self.encoder_goal - self.r_encoder.getDistance()
 
+		speed = (l_error + r_error) / 2
+
 		self.left_pwm =  util.limit(l_error, 0.5)
 		self.right_pwm = util.limit(r_error, 0.5)
 
@@ -153,10 +157,13 @@ class Drive(Component):
 		self.driving_encoder = False
 
 	def turn_gyro(self):
-		result = self.gyro_error() * self._gyro_p
+		error = self.gyro_error()
+		result = util.limit(error * self._gyro_p + ((error - self._prev_gyro_error) / 0.025) * self._gyro_d, 0.75)
 
 		self.left_pwm = result
 		self.right_pwm = -result
+
+		self._prev_gyro_error = error
 
 	def at_gyro_goal(self):
 		on = abs(self.gyro_error()) < self.gyro_tolerance
@@ -184,7 +191,7 @@ class Drive(Component):
 		elif self.driving_gyro:
 			if self.at_gyro_goal():
 				self.driving_gyro = False
-			self.drive_encoder()
+			self.turn_gyro()
 
 		self.l_motor.set(self.left_pwm)
 		self.r_motor.set(-self.right_pwm)
