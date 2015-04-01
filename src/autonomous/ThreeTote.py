@@ -19,17 +19,13 @@ class ThreeTote(StatefulAutonomous):
 
 	@state()
 	def drive_encoder(self):
-		if self.drive.at_encoder_goal():
+		if not self.drive.driving_encoder:
 			self.next_state(self.at_goal_state)
-		else:
-			self.drive.drive_encoder()
 
 	@state()
 	def drive_gyro(self):
-		if self.drive.at_gyro_goal():
+		if not self.drive.driving_gyro:
 			self.next_state(self.at_goal_state)
-		else:
-			self.drive.turn_gyro()
 
 	@timed_state(duration=1, first=True, next_state='nudge')
 	def start(self):

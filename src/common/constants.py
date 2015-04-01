@@ -18,6 +18,8 @@ solenoid_dropper = 1
 
 encoder_elevator = 0, 1, True  # 'True' sets the encoder to be reversed
 
-intake_photosensor = 3
+photosensor = 3
+far_photosensor = 8
+
 gyro = 0  # analog!
 ultrasonic = 1

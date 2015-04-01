@@ -15,7 +15,7 @@ def scale(img, width):
 	return img
 
 
-size = 200
+size = 150
 
 
 class Images():

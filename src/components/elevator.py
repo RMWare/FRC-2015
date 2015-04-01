@@ -19,7 +19,7 @@ class Setpoints(object):
 	DROP = 1
 	STACK = 2
 	BIN = 15
-	TOTE = 17
+	TOTE = 18
 	FIRST_TOTE = 7
 	AUTON = 20
 
@@ -31,7 +31,8 @@ class Elevator(Component):
 		super().__init__()
 		self._motor = SyncGroup(Talon, constants.motor_elevator)
 		self._position_encoder = Encoder(*constants.encoder_elevator)
-		self._intake_photosensor = DigitalInput(constants.intake_photosensor)
+		self._near_photosensor = DigitalInput(constants.photosensor)
+		self._far_photosensor = DigitalInput(constants.far_photosensor)
 		self._stabilizer = Solenoid(constants.solenoid_dropper)
 		self._position_encoder.setDistancePerPulse((PITCH_DIAMETER * math.pi) / TICKS_PER_REVOLUTION)
 
@@ -54,6 +55,8 @@ class Elevator(Component):
 		quickdebug.add_tunables(Setpoints, ["DROP", "STACK", "BIN", "TOTE", "FIRST_TOTE"])
 		quickdebug.add_printables(self, [
 			('position', self._position_encoder.getDistance),
+			('photosensor', self._near_photosensor.get),
+			('far_photosensor', self._far_photosensor.get),
 			"has_bin", "_tote_count", "_tote_first", "at_goal", "has_game_piece"
 		])
 
@@ -64,7 +67,8 @@ class Elevator(Component):
 		goal = self._follower.get_goal()
 		if self.at_goal:
 			if self._should_drop:  # Overrides everything else
-				self._follower._max_acc = 100  # Slow down on drop
+				if self.tote_count < 5 and not self.has_game_piece:
+					self._follower._max_acc = 100  # Slow down on drop
 				self._follower.set_goal(Setpoints.DROP)
 				self._close_stabilizer = False
 				self._new_stack = True
@@ -113,7 +117,11 @@ class Elevator(Component):
 
 	@property
 	def has_game_piece(self):
-		return not self._intake_photosensor.get() or self.force_stack
+		return not self._near_photosensor.get() or self.force_stack
+
+	@property
+	def almost_has_game_piece(self):
+		return not self._far_photosensor.get()
 
 	@property
 	def position(self):

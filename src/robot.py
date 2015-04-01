@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import logging
 
-from wpilib import SampleRobot, Timer, SmartDashboard, LiveWindow, run
+from wpilib import SampleRobot, Timer, LiveWindow, run
 
 from robotpy_ext.autonomous import AutonomousModeSelector
 
@@ -14,10 +14,6 @@ from common import delay, quickdebug
 log = logging.getLogger("robot")
 
 # to stay in sync with our driver station
-MODE_DISABLED = 0
-MODE_AUTONOMOUS = 1
-MODE_TELEOPERATED = 2
-
 CONTROL_LOOP_WAIT_TIME = 0.025
 
 
@@ -46,7 +42,6 @@ class Tachyon(SampleRobot):
 		quickdebug.init()
 
 	def autonomous(self):
-		SmartDashboard.putNumber('RobotMode', MODE_AUTONOMOUS)
 		self.autonomous_modes.run(CONTROL_LOOP_WAIT_TIME, iter_fn=self.update_all)
 		Timer.delay(CONTROL_LOOP_WAIT_TIME)
 
@@ -55,24 +50,25 @@ class Tachyon(SampleRobot):
 		self.update_networktables()
 
 	def disabled(self):
-		SmartDashboard.putNumber('RobotMode', MODE_DISABLED)
 		while self.isDisabled():
 			self.update_networktables()
 			Timer.delay(0.01)
 
 	def operatorControl(self):
-		SmartDashboard.putNumber('RobotMode', MODE_TELEOPERATED)
 		precise_delay = delay.PreciseDelay(CONTROL_LOOP_WAIT_TIME)
 		while self.isOperatorControl() and self.isEnabled():
 
 			if self.chandler.right_trigger():
 				self.elevator.stack_tote_first()
-				self.intake.spin(1)
+				self.intake.spin(.1 if self.elevator.almost_has_game_piece else .8)
 			else:
 				if not self.elevator.has_bin:
-					self.intake.spin(.75)  # Intaking woo
+					self.intake.spin(.1 if self.elevator.almost_has_game_piece else .75)  # Intaking woo
 				else:  # If we have a bin, then just intake
-					self.intake.spin(0 if self.elevator.full() else 1)
+					if self.elevator.full():
+						self.intake.spin(0)
+					else:
+						self.intake.spin(.1 if self.elevator.almost_has_game_piece else .8)
 
 			self.elevator.force_stack = self.chandler.a()
 
@@ -87,12 +83,21 @@ class Tachyon(SampleRobot):
 				self.elevator.drop_stack()
 
 			wheel = deadband(self.chandler.right_x(), .2)
-			throttle = -deadband(self.chandler.left_y(), .23) * 0.8
+			throttle = -deadband(self.chandler.left_y(), .23)
 
 			if self.chandler.b():
 				wheel *= 0.3
+				throttle *= 0.3
 
-			self.drive.cheesy_drive(wheel, throttle * 0.75, self.chandler.left_bumper())
+			self.drive.cheesy_drive(wheel, throttle, self.chandler.left_bumper())
+
+			ticks = self.chandler.dpad()
+			if ticks == 180:  # down on the dpad
+				self.drive.set_encoder_goal(-2)
+			elif ticks == 0:
+				self.drive.set_encoder_goal(2)
+			elif ticks == 90:
+				self.drive.set_encoder_goal(-15)
 
 			dpad = self.meet.dpad()  # You can only call it once per loop, bcus dbouncing
 			if dpad == 0 and self.elevator.tote_count < 6:
@@ -105,6 +110,11 @@ class Tachyon(SampleRobot):
 			if self.meet.start():
 				self.elevator._new_stack = True
 
+			if self.meet.b():
+				self.intake.spin(0)
+
+			if self.meet.a():
+				self.intake.spin(-1)
 
 			self.update()
 			self.update_networktables()
