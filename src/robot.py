@@ -93,11 +93,11 @@ class Tachyon(SampleRobot):
 
 			ticks = self.chandler.dpad()
 			if ticks == 180:  # down on the dpad
-				self.drive.set_encoder_goal(-2)
+				self.drive.set_distance_goal(-2)
 			elif ticks == 0:
-				self.drive.set_encoder_goal(2)
+				self.drive.set_distance_goal(2)
 			elif ticks == 90:
-				self.drive.set_encoder_goal(-15)
+				self.drive.set_distance_goal(-15)
 
 			dpad = self.meet.dpad()  # You can only call it once per loop, bcus dbouncing
 			if dpad == 0 and self.elevator.tote_count < 6:

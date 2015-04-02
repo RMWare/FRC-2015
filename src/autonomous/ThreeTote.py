@@ -16,13 +16,13 @@ class ThreeTote(StatefulAutonomous):
 		super(ThreeTote, self).on_iteration(tm)
 
 	@state()
-	def drive_encoder(self):
-		if not self.drive.driving_encoder:
+	def drive_distance(self):
+		if not self.drive.driving_distance:
 			self.next_state(self.at_goal_state)
 
 	@state()
-	def drive_gyro(self):
-		if not self.drive.driving_gyro:
+	def drive_angle(self):
+		if not self.drive.driving_angle:
 			self.next_state(self.at_goal_state)
 
 	@timed_state(duration=1, first=True, next_state='nudge')
@@ -33,32 +33,32 @@ class ThreeTote(StatefulAutonomous):
 	@state()
 	def nudge(self):
 		self.intake.close()
-		self.drive.set_encoder_goal(2)
+		self.drive.set_distance_goal(2)
 		self.intake.spin(-1, True)
 		self.at_goal_state = 'knock_first_bin'
-		self.next_state('drive_encoder')
+		self.next_state('drive_distance')
 
 	@state()
 	def knock_first_bin(self):
 		self.at_goal_state = 'realign_first_bin'
-		self.drive.set_gyro_goal(50)
+		self.drive.set_angle_goal(50)
 		self.intake.spin(1)
-		self.next_state('drive_gyro')
+		self.next_state('drive_angle')
 
 	@state()
 	def realign_first_bin(self):
 		self.at_goal_state = 'drive_towards_second_tote'
-		self.drive.set_gyro_goal(3)
+		self.drive.set_angle_goal(3)
 		self.intake.spin(1, True)
-		self.next_state('drive_gyro')
+		self.next_state('drive_angle')
 
 	@state()
 	def drive_towards_second_tote(self):
 		self.intake.spin(1)
 		self.intake.open()
 		self.at_goal_state = 'pause'
-		self.drive.set_encoder_goal(74)
-		self.next_state('drive_encoder')
+		self.drive.set_distance_goal(74)
+		self.next_state('drive_distance')
 
 	@timed_state(duration=0.3, next_state='nudge_second_tote')
 	def pause(self):
@@ -70,42 +70,42 @@ class ThreeTote(StatefulAutonomous):
 	@state()
 	def nudge_second_tote(self):
 		self.at_goal_state = 'knock_second_bin'
-		self.drive.set_encoder_goal(5)
-		self.next_state('drive_encoder')
+		self.drive.set_distance_goal(5)
+		self.next_state('drive_distance')
 
 	@state()
 	def knock_second_bin(self):
 		self.at_goal_state = 'realign_second_bin'
-		self.drive.set_gyro_goal(50)
-		self.next_state('drive_gyro')
+		self.drive.set_angle_goal(50)
+		self.next_state('drive_angle')
 
 	@state()
 	def realign_second_bin(self):
 		self.at_goal_state = 'drive_towards_last_tote'
 		self.intake.spin(-1, True)
-		self.drive.set_gyro_goal(3)
-		self.next_state('drive_gyro')
+		self.drive.set_angle_goal(3)
+		self.next_state('drive_angle')
 
 	@state()
 	def drive_towards_last_tote(self):
 		self.at_goal_state = 'turn_towards_zone'
-		self.drive.set_encoder_goal(75)
-		self.next_state('drive_encoder')
+		self.drive.set_distance_goal(75)
+		self.next_state('drive_distance')
 		self.intake.spin(1)
 		self.intake.open()
 
 	@state()
 	def turn_towards_zone(self):
 		self.intake.close()
-		self.drive.set_gyro_goal(90)
+		self.drive.set_angle_goal(90)
 		self.at_goal_state = 'drive_towards_zone'
-		self.next_state('drive_gyro')
+		self.next_state('drive_angle')
 
 	@state()
 	def drive_towards_zone(self):
-		self.drive.set_encoder_goal(6 * 12)
+		self.drive.set_distance_goal(6 * 12)
 		self.at_goal_state = 'drop'
-		self.next_state('drive_encoder')
+		self.next_state('drive_distance')
 
 	@timed_state(duration=0.3, next_state='stop')
 	def drop(self):
@@ -116,8 +116,8 @@ class ThreeTote(StatefulAutonomous):
 	@state()
 	def leave_zone(self):
 		self.elevator.drop_stack()
-		self.drive.set_encoder_goal(-4 * 12)
-		self.next_state('drive_encoder')
+		self.drive.set_distance_goal(-4 * 12)
+		self.next_state('drive_distance')
 		self.at_goal_state = 'stop'
 
 	@state()
