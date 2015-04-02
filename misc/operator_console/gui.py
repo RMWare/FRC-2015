@@ -1,7 +1,10 @@
 import logging
 from tkinter import *
+
 from PIL import ImageTk, Image
+import math
 from networktables import NetworkTable
+
 
 # To see messages from networktables, you must setup logging
 
@@ -34,6 +37,8 @@ class App(Tk):
 		self.images = Images()
 		self.countdown_label = Label(self, text="")
 		self.countdown_label.grid(row=0, column=1)
+		self.window_width_label = Label(self, text="                                             ")
+		self.window_width_label.grid(row=1, column=1)
 		self.can = Label(self, image=self.images.can_off)
 		self.can.grid(row=0)
 		self.totes = []
@@ -42,24 +47,40 @@ class App(Tk):
 			self.totes[i].grid(row=i + 1)
 		self.minutes = 0
 		self.seconds = 0
-		self.milliseconds = 0
-		self.remaining = 0
+		self.t = 150
+
 		self.update()
 
 	def update(self):
 		# ##################### counter ######################
 		t = self.robot.getNumber('match_time', 0.0)
-		minutes = t / 60
-		seconds = t % 60
+		# t = self.t
 
-		if t <= 0:
-			self.countdown_label.configure(text="Time's up!", fg="red", font=("Arial", 20))
+		self.t -= 0.01
+
+		minutes = t / 60
+		s = round(t % 60)
+		ms = round((t - math.floor(t)) * 100)
+
+		if s < 10:
+			seconds = "0" + str(s)
 		else:
-			self.countdown_label.configure(text="%d:%d" % (minutes, seconds), fg="green" if t > 20 else "yellow", font=("Arial", 20))
+			seconds = str(s)
+
+		if ms < 10:
+			milliseconds = "0" + str(ms)
+		else:
+			milliseconds = str(ms)
+
+		if t <= 1:
+			self.countdown_label.configure(text="Time's up!", fg="black", font=("Britannic Bold", 20))
+		else:
+			self.countdown_label.configure(text="%d:" % minutes + seconds + ":" + milliseconds, fg="green" if t > 20 else "red", font=("Britannic Bold", 20))
 
 		self.after(10, self.update)
 
 	def update_elevator(self, source, key, value, is_new):
+		# ##################### elevator ######################
 		if key == 'has_bin':
 			self.can.configure(image=self.images.can_on if value else self.images.can_off)
 		elif key == '_tote_count':
@@ -75,4 +96,5 @@ if __name__ == "__main__":
 	NetworkTable.initialize()
 	app = App()
 	app.mainloop()
+
 
