@@ -20,8 +20,8 @@ class Drive(Component):
 
 	# Gyro & encoder stuff
 	gyro_timer = Timer()
-	driving_gyro = False
-	driving_encoder = False
+	driving_angle = False
+	driving_distance = False
 
 	gyro_goal = 0
 	gyro_tolerance = 2  # Degrees
@@ -127,37 +127,39 @@ class Drive(Component):
 		self.right_pwm = math.copysign(math.pow(right, 2), right)
 
 	# Stuff for encoder driving
-	def set_encoder_goal(self, goal):
+	def set_distance_goal(self, goal):
 		self.l_encoder.reset()
 		self.r_encoder.reset()
 		self.encoder_goal = goal
-		self.driving_encoder = True
-		self.driving_gyro = False
+		self.driving_distance = True
+		self.driving_angle = False
 
-	def drive_encoder(self):
+	def drive_distance(self):
 		l_error = self.encoder_goal - self.l_encoder.getDistance()
 		r_error = self.encoder_goal - self.r_encoder.getDistance()
 
-		speed = (l_error + r_error) / 2
 
-		self.left_pwm =  util.limit(l_error, 0.5)
-		self.right_pwm = util.limit(r_error, 0.5)
+		l_speed = l_error + (self.gyro_error * self._gyro_p * 0.5)
+		r_speed = r_error - (self.gyro_error * self._gyro_p * 0.5)
 
-	def at_encoder_goal(self):
+		self.left_pwm =  util.limit(l_speed, 0.5)
+		self.right_pwm = util.limit(r_speed, 0.5)
+
+	def at_distance_goal(self):
 		l_error = self.encoder_goal - self.l_encoder.getDistance()
 		r_error = self.encoder_goal - self.r_encoder.getDistance()
 		return abs(l_error) < self.encoder_tolerance and abs(r_error) < self.encoder_tolerance
 
 	# Stuff for Gyro driving
-	def set_gyro_goal(self, goal):
+	def set_angle_goal(self, goal):
 		self.gyro_timer.stop()
 		self.gyro_timer.reset()
 		self.gyro_goal = goal
-		self.driving_gyro = True
-		self.driving_encoder = False
+		self.driving_angle = True
+		self.driving_distance = False
 
-	def turn_gyro(self):
-		error = self.gyro_error()
+	def turn_angle(self):
+		error = self.gyro_error
 		result = util.limit(error * self._gyro_p + ((error - self._prev_gyro_error) / 0.025) * self._gyro_d, 0.75)
 
 		self.left_pwm = result
@@ -165,8 +167,8 @@ class Drive(Component):
 
 		self._prev_gyro_error = error
 
-	def at_gyro_goal(self):
-		on = abs(self.gyro_error()) < self.gyro_tolerance
+	def at_angle_goal(self):
+		on = abs(self.gyro_error) < self.gyro_tolerance
 		if on:
 			if not self.gyro_timer.running:
 				self.gyro_timer.start()
@@ -174,6 +176,7 @@ class Drive(Component):
 					return True
 		return False
 
+	@property
 	def gyro_error(self):
 		"""
 		Returns gyro error wrapped from -180 to 180
@@ -184,14 +187,14 @@ class Drive(Component):
 		return wrapped_error
 
 	def update(self):
-		if self.driving_encoder:
-			if self.at_encoder_goal():
-				self.driving_encoder = False
-			self.drive_encoder()
-		elif self.driving_gyro:
-			if self.at_gyro_goal():
-				self.driving_gyro = False
-			self.turn_gyro()
+		if self.driving_distance:
+			if self.at_distance_goal():
+				self.driving_distance = False
+			self.drive_distance()
+		elif self.driving_angle:
+			if self.at_angle_goal():
+				self.driving_angle = False
+			self.turn_angle()
 
 		self.l_motor.set(self.left_pwm)
 		self.r_motor.set(-self.right_pwm)
