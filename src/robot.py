@@ -82,7 +82,7 @@ class Tachyon(SampleRobot):
 				self.elevator.drop_stack()
 
 			wheel = deadband(self.chandler.right_x(), .2)
-			throttle = -deadband(self.chandler.left_y(), .23)
+			throttle = -deadband(self.chandler.left_y(), .23) * .8
 
 			if self.chandler.b():
 				wheel *= 0.3
