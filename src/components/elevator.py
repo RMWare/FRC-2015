@@ -46,7 +46,7 @@ class Elevator(Component):
 		self._should_drop = False  # Are we currently trying to get a bin ?
 
 		self._close_stabilizer = True  # Opens the stabilizer manually
-		self.force_stack = False  # manually actuates the elevator down and up
+		self._force_stack = False  # manually actuates the elevator down and up
 
 		self._follower.set_goal(Setpoints.BIN)  # Base state
 
@@ -87,7 +87,7 @@ class Elevator(Component):
 					self._follower.set_goal(Setpoints.AUTON if self._auton else Setpoints.TOTE)  # Go back up
 				elif self.has_game_piece and self._tote_count < 5:  # If we try to stack a 6th tote it'll break the robot
 					if not self.has_bin and not self.tote_first:  # If we're doing bin
-						if self.force_stack:
+						if self._force_stack:
 							self._follower.set_goal(Setpoints.STACK)
 					else:
 						self._follower.set_goal(Setpoints.STACK)
@@ -121,7 +121,7 @@ class Elevator(Component):
 
 	@property
 	def has_game_piece(self):
-		return not self._near_photosensor.get() or self.force_stack
+		return not self._near_photosensor.get() or self._force_stack
 
 	@property
 	def almost_has_game_piece(self):
@@ -141,6 +141,7 @@ class Elevator(Component):
 	def stack_tote_first(self):
 		self._tote_first = True
 
+	@property
 	def full(self):
 		return self._tote_count == 5 and self.has_game_piece
 
@@ -167,3 +168,6 @@ class Elevator(Component):
 
 	def auton(self):
 		self._auton = True
+
+	def force_stack(self, should):
+		self._force_stack = should

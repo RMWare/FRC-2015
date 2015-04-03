@@ -16,7 +16,7 @@ class Drive(Component):
 	# Cheesy Drive Stuff
 	quickstop_accumulator = 0
 	old_wheel = 0
-	sensitivity = 1.5
+	sensitivity = 0.67
 
 	# Gyro & encoder stuff
 	gyro_timer = Timer()

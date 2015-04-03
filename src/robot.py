@@ -64,12 +64,12 @@ class Tachyon(SampleRobot):
 				if not self.elevator.has_bin:
 					self.intake.spin(.3 if self.elevator.almost_has_game_piece else .75)  # Intaking woo
 				else:  # If we have a bin, then just intake
-					if self.elevator.full():
+					if self.elevator.full:
 						self.intake.spin(0)
 					else:
 						self.intake.spin(.3 if self.elevator.almost_has_game_piece else .8)
 
-			self.elevator.force_stack = self.chandler.a()
+			self.elevator.force_stack(self.chandler.a())
 
 			if self.chandler.right_bumper():
 				self.intake.open()
