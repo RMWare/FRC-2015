@@ -25,4 +25,5 @@ class Pneumatics(Component):
 
 	def stop(self):
 		"""Disables EVERYTHING. Only use in case of critical failure"""
-		self.comp.stop()
+		#self.comp.stop()
+		pass

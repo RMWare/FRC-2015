@@ -138,9 +138,8 @@ class Drive(Component):
 		l_error = self.encoder_goal - self.l_encoder.getDistance()
 		r_error = self.encoder_goal - self.r_encoder.getDistance()
 
-
-		l_speed = l_error + (self.gyro_error * self._gyro_p * 0.5)
-		r_speed = r_error - (self.gyro_error * self._gyro_p * 0.5)
+		l_speed = l_error# + util.limit(self.gyro_error * self._gyro_p * 0.5, 0.3)
+		r_speed = r_error# - util.limit(self.gyro_error * self._gyro_p * 0.5, 0.3)
 
 		self.left_pwm =  util.limit(l_speed, 0.5)
 		self.right_pwm = util.limit(r_speed, 0.5)
@@ -186,7 +185,7 @@ class Drive(Component):
 		wrapped_error = raw_error - 360 * round(raw_error / 360)
 		return wrapped_error
 
-	def update(self):
+	def auto_drive(self):
 		if self.driving_distance:
 			if self.at_distance_goal():
 				self.driving_distance = False
@@ -196,5 +195,6 @@ class Drive(Component):
 				self.driving_angle = False
 			self.turn_angle()
 
+	def update(self):
 		self.l_motor.set(self.left_pwm)
 		self.r_motor.set(-self.right_pwm)

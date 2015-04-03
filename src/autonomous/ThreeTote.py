@@ -13,6 +13,7 @@ class ThreeTote(StatefulAutonomous):
 
 	def on_iteration(self, tm):
 		self.elevator.auton()
+		self.drive.auto_drive()
 		super(ThreeTote, self).on_iteration(tm)
 
 	@state()

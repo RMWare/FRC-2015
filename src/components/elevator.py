@@ -16,12 +16,12 @@ TICKS_PER_REVOLUTION = 2048
 
 
 class Setpoints(object):
-	DROP = 1
-	STACK = 2
-	BIN = 15
+	DROP = 0
+	STACK = 0.1
+	BIN = 14
 	TOTE = 18
 	FIRST_TOTE = 7
-	AUTON = 20
+	AUTON = 21
 
 
 class Elevator(Component):
@@ -86,7 +86,11 @@ class Elevator(Component):
 						self._tote_count += 1
 					self._follower.set_goal(Setpoints.AUTON if self._auton else Setpoints.TOTE)  # Go back up
 				elif self.has_game_piece and self._tote_count < 5:  # If we try to stack a 6th tote it'll break the robot
-					self._follower.set_goal(Setpoints.STACK)
+					if not self.has_bin and not self.tote_first:  # If we're doing bin
+						if self.force_stack:
+							self._follower.set_goal(Setpoints.STACK)
+					else:
+						self._follower.set_goal(Setpoints.STACK)
 					if self.has_bin:  # Transfer!
 						if self._tote_count == 1:
 							self._close_stabilizer = False
@@ -129,7 +133,7 @@ class Elevator(Component):
 
 	@property
 	def at_goal(self):
-		return self._follower.trajectory_finished()
+		return self._follower.trajectory_finished() or abs(self._follower.get_goal() - self.position) < 1
 
 	def drop_stack(self):
 		self._should_drop = True

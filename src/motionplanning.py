@@ -34,9 +34,8 @@ class TrajectoryFollower(object):
 		self._ka = .0
 
 		self._max_acc = 250
-		self._max_vel = 100000000000
 
-		quickdebug.add_tunables(self, ["_kp", "_ki", "_kd", "_kv", "_ka", "_max_vel"])
+		quickdebug.add_tunables(self, ["_kp", "_ki", "_kd", "_kv", "_ka"])
 		quickdebug.add_printables(self, ['_goal_position', '_error_sum', '_prev_error', '_setpoint',
 		                                 ('trajectory finished?', self.trajectory_finished)])
 
@@ -76,7 +75,7 @@ class TrajectoryFollower(object):
 			min_reachable_velocity_disc = cur_vel2 / 2.0 - self._max_acc * distance_to_go
 			cruise_vel = cur_vel
 			if min_reachable_velocity_disc < 0 or cruise_vel < 0:
-				cruise_vel = min(self._max_vel, math.sqrt(max_reachable_velocity_disc))
+				cruise_vel = math.sqrt(max_reachable_velocity_disc)
 
 			# Accelerate to cruise velocity
 			t_start = (cruise_vel - cur_vel) / self._max_acc
