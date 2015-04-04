@@ -31,9 +31,8 @@ class Elevator(Component):
 		super().__init__()
 		self._motor = SyncGroup(Talon, constants.motor_elevator)
 		self._position_encoder = Encoder(*constants.encoder_elevator)
-		self._near_photosensor = DigitalInput(constants.photosensor)
-		self._far_photosensor = DigitalInput(constants.far_photosensor)
-		self._stabilizer = Solenoid(constants.solenoid_dropper)
+		self._photosensor = DigitalInput(constants.photosensor)
+		self._stabilizer_piston = Solenoid(constants.solenoid_dropper)
 		self._position_encoder.setDistancePerPulse((PITCH_DIAMETER * math.pi) / TICKS_PER_REVOLUTION)
 
 		# Trajectory controlling stuff
@@ -57,8 +56,7 @@ class Elevator(Component):
 		quickdebug.add_tunables(Setpoints, ["DROP", "STACK", "BIN", "TOTE", "FIRST_TOTE"])
 		quickdebug.add_printables(self, [
 			('position', self._position_encoder.getDistance),
-			('photosensor', self._near_photosensor.get),
-			('far_photosensor', self._far_photosensor.get),
+			('photosensor', self._photosensor.get),
 			"has_bin", "_tote_count", "tote_first", "at_goal", "has_game_piece", "auto_stacking"
 		])
 
@@ -114,7 +112,7 @@ class Elevator(Component):
 						self._follower.set_goal(Setpoints.TOTE)
 
 		self._motor.set(self._follower.calculate(self.position))
-		self._stabilizer.set(self._close_stabilizer)
+		self._stabilizer_piston.set(self._close_stabilizer)
 		self._should_drop = False
 		self._tote_first = False
 		self._auton = False
@@ -126,11 +124,7 @@ class Elevator(Component):
 
 	@property
 	def has_game_piece(self):
-		return not self._near_photosensor.get() or self.force_stack
-
-	@property
-	def almost_has_game_piece(self):
-		return not self._far_photosensor.get()
+		return not self._photosensor.get() or self.force_stack
 
 	@property
 	def position(self):
