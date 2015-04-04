@@ -16,7 +16,7 @@ class Drive(Component):
 	# Cheesy Drive Stuff
 	quickstop_accumulator = 0
 	old_wheel = 0
-	sensitivity = 0.67
+	sensitivity = .9
 
 	# Gyro & encoder stuff
 	gyro_timer = Timer()
@@ -95,7 +95,7 @@ class Drive(Component):
 				alpha = .1
 				self.quickstop_accumulator = (1 - alpha) * self.quickstop_accumulator + alpha * util.limit(wheel, 1.0) * 5
 			over_power = 1
-			angular_power = wheel
+			angular_power = wheel * .75
 		else:
 			over_power = 0
 			angular_power = abs(throttle) * wheel * self.sensitivity - self.quickstop_accumulator
@@ -130,16 +130,17 @@ class Drive(Component):
 	def set_distance_goal(self, goal):
 		self.l_encoder.reset()
 		self.r_encoder.reset()
+		self.gyro_goal = self.gyro.getAngle()
 		self.encoder_goal = goal
 		self.driving_distance = True
 		self.driving_angle = False
 
 	def drive_distance(self):
-		l_error = self.encoder_goal - self.l_encoder.getDistance()
-		r_error = self.encoder_goal - self.r_encoder.getDistance()
+		l_error = util.limit(self.encoder_goal - self.l_encoder.getDistance(), 0.5)
+		r_error = util.limit(self.encoder_goal - self.r_encoder.getDistance(), 0.5)
 
-		l_speed = l_error# + util.limit(self.gyro_error * self._gyro_p * 0.5, 0.3)
-		r_speed = r_error# - util.limit(self.gyro_error * self._gyro_p * 0.5, 0.3)
+		l_speed = l_error + util.limit(self.gyro_error * self._gyro_p * 0.5, 0.3)
+		r_speed = r_error - util.limit(self.gyro_error * self._gyro_p * 0.5, 0.3)
 
 		self.left_pwm =  util.limit(l_speed, 0.5)
 		self.right_pwm = util.limit(r_speed, 0.5)
@@ -159,7 +160,7 @@ class Drive(Component):
 
 	def turn_angle(self):
 		error = self.gyro_error
-		result = util.limit(error * self._gyro_p + ((error - self._prev_gyro_error) / 0.025) * self._gyro_d, 0.75)
+		result = error * self._gyro_p + ((error - self._prev_gyro_error) / 0.025) * self._gyro_d
 
 		self.left_pwm = result
 		self.right_pwm = -result

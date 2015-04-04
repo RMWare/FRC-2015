@@ -57,19 +57,19 @@ class Tachyon(SampleRobot):
 	def operatorControl(self):
 		precise_delay = delay.PreciseDelay(CONTROL_LOOP_WAIT_TIME)
 		while self.isOperatorControl() and self.isEnabled():
-			if self.chandler.right_trigger():
+			if self.meet.left_bumper():
 				self.elevator.stack_tote_first()
 				self.intake.spin(.3 if self.elevator.almost_has_game_piece else .8)
 			else:
 				if not self.elevator.has_bin:
 					self.intake.spin(.3 if self.elevator.almost_has_game_piece else .75)  # Intaking woo
 				else:  # If we have a bin, then just intake
-					if self.elevator.full:
+					if self.elevator.full():
 						self.intake.spin(0)
 					else:
 						self.intake.spin(.3 if self.elevator.almost_has_game_piece else .8)
 
-			self.elevator.force_stack(self.chandler.a())
+			self.elevator.force_stack = self.chandler.a()
 
 			if self.chandler.right_bumper():
 				self.intake.open()
@@ -82,21 +82,21 @@ class Tachyon(SampleRobot):
 				self.elevator.drop_stack()
 
 			wheel = deadband(self.chandler.right_x(), .2)
-			throttle = -deadband(self.chandler.left_y(), .23) * .8
+			throttle = -deadband(self.chandler.left_y(), .2) * .8
 
-			if self.chandler.b():
+			if self.chandler.right_trigger():
 				wheel *= 0.3
 				throttle *= 0.3
 
 			self.drive.cheesy_drive(wheel, throttle, self.chandler.left_bumper())
 			self.drive.auto_drive()
 			ticks = self.chandler.dpad()
-			if ticks == 180:  # down on the dpad
+			if ticks == 180:  # dowdn on the dpad
 				self.drive.set_distance_goal(-2)
 			elif ticks == 0:
 				self.drive.set_distance_goal(2)
 			elif ticks == 90:
-				self.drive.set_distance_goal(-15)
+				self.drive.set_distance_goal(-18)
 
 			dpad = self.meet.dpad()  # You can only call it once per loop, bcus dbouncing
 			if dpad == 0 and self.elevator.tote_count < 6:
@@ -114,7 +114,7 @@ class Tachyon(SampleRobot):
 
 			if self.meet.a():
 				self.intake.spin(-1)
-
+			self.elevator.auto_stacking = not self.meet.right_bumper()  # Disable automatic stacking if bumper pressed
 			# Deadman's switch! very important for safety.
 			if not self.ds.isFMSAttached() and not self.meet.left_trigger():
 				for component in self.components.values():

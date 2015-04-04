@@ -39,6 +39,8 @@ class Elevator(Component):
 		# Trajectory controlling stuff
 		self._follower = TrajectoryFollower()
 
+		self.auto_stacking = True  # Do the dew
+
 		self._tote_count = 0  # Keep track of totes!
 		self._has_bin = False  # Do we have a bin on top?
 		self._new_stack = True  # starting a new stack?
@@ -46,7 +48,7 @@ class Elevator(Component):
 		self._should_drop = False  # Are we currently trying to get a bin ?
 
 		self._close_stabilizer = True  # Opens the stabilizer manually
-		self._force_stack = False  # manually actuates the elevator down and up
+		self.force_stack = False  # manually actuates the elevator down and up
 
 		self._follower.set_goal(Setpoints.BIN)  # Base state
 
@@ -57,7 +59,7 @@ class Elevator(Component):
 			('position', self._position_encoder.getDistance),
 			('photosensor', self._near_photosensor.get),
 			('far_photosensor', self._far_photosensor.get),
-			"has_bin", "_tote_count", "_tote_first", "at_goal", "has_game_piece"
+			"has_bin", "_tote_count", "tote_first", "at_goal", "has_game_piece", "auto_stacking"
 		])
 
 	def stop(self):
@@ -80,16 +82,22 @@ class Elevator(Component):
 					self._tote_count = 0
 					self._has_bin = False
 				if goal == Setpoints.STACK:  # If we've just gone down to grab something
-					if self._tote_count == 0 and not self._has_bin and not self._tote_first:
+					if self.tote_count == 0 and not self.has_bin and not self.tote_first:
 						self._has_bin = True  # Count the bin
-					else:  # We were waiting  for a tote
-						self._tote_count += 1
+					else:  # We were waiting for a tote
+						self.add_tote()
 					self._follower.set_goal(Setpoints.AUTON if self._auton else Setpoints.TOTE)  # Go back up
-				elif self.has_game_piece and self._tote_count < 5:  # If we try to stack a 6th tote it'll break the robot
-					if not self.has_bin and not self.tote_first:  # If we're doing bin
-						if self._force_stack:
+					if self._tote_count >= 2:
+						self._close_stabilizer = True
+				elif (self.has_game_piece and self.auto_stacking) and self.tote_count < 5:  # If we try to stack a 6th tote it'll break the robot
+					if not self.has_bin:
+						# Without a bin, only stack in these situations:
+						# - We're picking up a tote, and this is the first tote.
+						# - We're forcing the elevator to stack (for the bin, usually)
+						# - We have more than one tote already, so we can pick up more.
+						if self.tote_first or self.force_stack or self.tote_count > 0:
 							self._follower.set_goal(Setpoints.STACK)
-					else:
+					else:  # We have a bin, just auto-stack.
 						self._follower.set_goal(Setpoints.STACK)
 					if self.has_bin:  # Transfer!
 						if self._tote_count == 1:
@@ -98,15 +106,12 @@ class Elevator(Component):
 					if self._auton:
 						self._follower.set_goal(Setpoints.AUTON)
 					elif self._tote_count == 0 and not self.has_bin:
-						if self._tote_first:
+						if self.tote_first:
 							self._follower.set_goal(Setpoints.FIRST_TOTE)
 						else:
 							self._follower.set_goal(Setpoints.BIN)
 					else:
 						self._follower.set_goal(Setpoints.TOTE)
-
-					if self._tote_count >= 2:
-						self._close_stabilizer = True
 
 		self._motor.set(self._follower.calculate(self.position))
 		self._stabilizer.set(self._close_stabilizer)
@@ -121,7 +126,7 @@ class Elevator(Component):
 
 	@property
 	def has_game_piece(self):
-		return not self._near_photosensor.get() or self._force_stack
+		return not self._near_photosensor.get() or self.force_stack
 
 	@property
 	def almost_has_game_piece(self):
@@ -133,7 +138,7 @@ class Elevator(Component):
 
 	@property
 	def at_goal(self):
-		return self._follower.trajectory_finished() or abs(self._follower.get_goal() - self.position) < 1
+		return self._follower.trajectory_finished()# and abs(self._follower.get_goal() - self.position) < 2
 
 	def drop_stack(self):
 		self._should_drop = True
@@ -141,7 +146,6 @@ class Elevator(Component):
 	def stack_tote_first(self):
 		self._tote_first = True
 
-	@property
 	def full(self):
 		return self._tote_count == 5 and self.has_game_piece
 
@@ -168,6 +172,4 @@ class Elevator(Component):
 
 	def auton(self):
 		self._auton = True
-
-	def force_stack(self, should):
-		self._force_stack = should
+		self._tote_first = True

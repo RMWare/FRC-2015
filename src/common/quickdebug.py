@@ -13,15 +13,15 @@ def add_tunables(object_, tunables):
 		for tunable in tunables:
 			_tunables.append((object_, tunable))
 	else:
-		_tunables.append([object_, tunables])
+		_tunables.append((object_, tunables))
 
 
 def add_printables(object_, printables):
 	if type(printables) is list:
 		for printable in printables:
-			_printables.append([object_, printable])
+			_printables.append((object_, printable))
 	else:
-		_printables.append([object_, printables])
+		_printables.append((object_, printables))
 
 
 def init():

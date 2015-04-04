@@ -110,8 +110,6 @@ class TrajectoryFollower(object):
 				self._next_state.pos *= -1
 				self._next_state.vel *= -1
 				self._next_state.acc *= -1
-			else:
-				self._next_state.vel = cruise_vel  # If we're going up, you can start at max accel.
 			self._setpoint.pos += self._next_state.pos
 			self._setpoint.vel = self._next_state.vel
 			self._setpoint.acc = self._next_state.acc
