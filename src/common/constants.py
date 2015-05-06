@@ -9,6 +9,8 @@ encoder_drive_r = 6, 7
 # Intake
 motor_intake_l = 0
 motor_intake_r = 7
+pdp_intake_l = 11
+pdp_intake_r = 4
 
 # Elevator
 motor_elevator = 1, 2, 8

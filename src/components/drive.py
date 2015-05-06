@@ -186,15 +186,6 @@ class Drive(Component):
 		wrapped_error = raw_error - 360 * round(raw_error / 360)
 		return wrapped_error
 
-	def auto_drive(self):
-		if self.driving_distance:
-			if self.at_distance_goal():
-				self.driving_distance = False
-			self.drive_distance()
-		elif self.driving_angle:
-			if self.at_angle_goal():
-				self.driving_angle = False
-			self.turn_angle()
 
 	def update(self):
 		self.l_motor.set(self.left_pwm)

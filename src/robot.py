@@ -11,6 +11,7 @@ from components import drive, intake, pneumatics, elevator
 from common import delay, quickdebug
 
 
+
 log = logging.getLogger("robot")
 
 # to stay in sync with our driver station
@@ -86,10 +87,9 @@ class Tachyon(SampleRobot):
 				throttle *= 0.3
 
 			self.drive.cheesy_drive(wheel, throttle, self.chandler.left_bumper())
-			self.drive.auto_drive()  # encoders n shit
 
 			ticks = self.chandler.dpad()
-			if ticks == 180:  # dowdn on the dpad
+			if ticks == 180:  # down on the dpad
 				self.drive.set_distance_goal(-2)
 			elif ticks == 0:
 				self.drive.set_distance_goal(2)
