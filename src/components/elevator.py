@@ -67,7 +67,7 @@ class Elevator(Component):
 		goal = self._follower.get_goal()
 		if self.at_goal:
 			if self._should_drop:  # Overrides everything else
-				if self.tote_count < 5 and not self.has_game_piece:
+				if self.tote_count < 6 and not self.has_game_piece:
 					self._follower._max_acc = 100  # Slow down on drop
 				self._follower.set_goal(Setpoints.DROP)
 				self._close_stabilizer = False

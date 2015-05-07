@@ -58,6 +58,7 @@ class Tachyon(SampleRobot):
 	def operatorControl(self):
 		precise_delay = delay.PreciseDelay(CONTROL_LOOP_WAIT_TIME)
 		while self.isOperatorControl() and self.isEnabled():
+			self.intake.prevent_bounce = self.elevator.has_game_piece and not self.elevator.full()  # loler1
 			if self.meet.left_bumper() or self.elevator.has_bin:
 				self.elevator.stack_tote_first()
 				if self.elevator.full():
@@ -114,7 +115,7 @@ class Tachyon(SampleRobot):
 				self.intake.spin(-1)
 			self.elevator.auto_stacking = not self.meet.right_bumper()  # Disable automatic stacking if bumper pressed
 			# Deadman's switch! very important for safety.
-			if not self.ds.isFMSAttached() and not self.meet.left_trigger():
+			if False and not self.ds.isFMSAttached() and not self.meet.left_trigger(): # TODO re-enable at comp
 				for component in self.components.values():
 					component.stop()
 			else:
