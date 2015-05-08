@@ -12,12 +12,13 @@ log = logging.getLogger("drivetrain")
 
 class Drive(Component):
 	left_pwm = 0
+
 	right_pwm = 0
 
 	# Cheesy Drive Stuff
 	quickstop_accumulator = 0
-	old_wheel = 0
 	sensitivity = .9
+	old_wheel = 0
 
 	# Gyro & encoder stuff
 	gyro_timer = Timer()
@@ -25,10 +26,10 @@ class Drive(Component):
 	driving_distance = False
 
 	gyro_goal = 0
-	gyro_tolerance = 2  # Degrees
+	gyro_tolerance = 1  # Degree
 
 	encoder_goal = 0
-	encoder_tolerance = 1  # Inches
+	encoder_tolerance = 1  # Inch
 
 	def __init__(self):
 		super().__init__()
@@ -188,7 +189,7 @@ class Drive(Component):
 		wrapped_error = raw_error - 360 * round(raw_error / 360)
 		return wrapped_error
 
-
 	def update(self):
+		self.gyro.update()
 		self.l_motor.set(self.left_pwm)
 		self.r_motor.set(-self.right_pwm)

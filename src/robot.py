@@ -141,7 +141,7 @@ class Tachyon(SampleRobot):
 					if self.ds.isFMSAttached():
 						log.error("In subsystem %s: %s" % (component, e))
 					else:
-						raise e
+						raise
 
 	def update_networktables(self):
 		if not self.nt_timer.hasPeriodPassed(0.2):  # we don't need to update every cycle

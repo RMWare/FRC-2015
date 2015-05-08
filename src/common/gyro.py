@@ -1,5 +1,7 @@
-from threading import Thread
+from _ctypes import POINTER
+import ctypes
 from wpilib import SPI, Timer
+from wpilib.robotbase import logger
 
 READ_COMMAND = 0x20
 DATA_SIZE = 4
@@ -44,16 +46,19 @@ class ADXRS453Z(object):
 		self._calibration_timer.start()
 		self._update_timer = Timer()
 		self._update_timer.start()
-
-		self._update_thread = Thread(self.update)
-		self._update_thread.start()
+		#
+		# self._update_thread = Thread(self.update, daemon=True)
+		# self._update_thread.start()
 
 	def update(self):
+		logger.info(self._data)
 		# Check parity
 		num_bits = sum([bits(c) for c in self._command])
 		if num_bits % 2 == 0:
 			self._command[3] |= PARITY_BIT
-		self._data = self._spi.transaction(self._command)
+
+		command = (ctypes.c_ubyte * DATA_SIZE)(*self._command)
+		self._data = self._spi.transaction(command)
 		if self._calibration_timer.get() < WARM_UP_PERIOD:
 			self._last_time = self._current_time = self._update_timer.get()
 			return
