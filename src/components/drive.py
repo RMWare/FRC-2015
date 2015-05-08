@@ -1,7 +1,8 @@
 import logging
 import math
-from wpilib import Talon, Gyro, Encoder, Timer
+from wpilib import Talon, Encoder, Timer
 from common import util, constants, quickdebug
+from common.gyro import ADXRS453Z
 from common.syncgroup import SyncGroup
 from . import Component
 
@@ -45,7 +46,8 @@ class Drive(Component):
 		self.l_encoder.setDistancePerPulse((DISTANCE_PER_REV * REDUCTION) / TICKS_PER_REV)
 		self.r_encoder.setDistancePerPulse((DISTANCE_PER_REV * REDUCTION) / TICKS_PER_REV)
 
-		self.gyro = Gyro(constants.gyro)
+		# self.gyro = Gyro(constants.gyro)
+		self.gyro = ADXRS453Z()
 		self._gyro_p = 0.12
 		self._gyro_d = 0.005
 		self._prev_gyro_error = 0

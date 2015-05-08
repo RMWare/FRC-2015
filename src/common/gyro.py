@@ -97,16 +97,13 @@ class ADXRS453Z(object):
 		# X X X X X X D D | D D D D D D D D | D D D D D D X X | X X X X X X X X X
 		return (data[0] & FIRST_BYTE_DATA) << 14 | (data[1]) << 6 | (data[2] & THIRD_BYTE_DATA) >> 2
 
-	@property
-	def rate(self):
+	def getRate(self):
 		return self._current_rate
 
-	@property
-	def angle(self):
+	def getAngle(self):
 		return self._accumulated_angle
 
-	@property
-	def offset(self):
+	def getOffset(self):
 		return self._accumulated_offset
 
 	def reset(self):
