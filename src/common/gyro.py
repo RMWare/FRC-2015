@@ -1,7 +1,4 @@
-from _ctypes import POINTER
-import ctypes
 from wpilib import SPI, Timer
-from wpilib.robotbase import logger
 
 READ_COMMAND = 0x20
 DATA_SIZE = 4
@@ -31,7 +28,7 @@ class ADXRS453Z(object):
 		self._spi = spi
 
 		self._command = [0x00] * DATA_SIZE
-		self._data = [0x00] * DATA_SIZE
+		self._data    = [0x00] * DATA_SIZE
 
 		self._command[0] = READ_COMMAND
 

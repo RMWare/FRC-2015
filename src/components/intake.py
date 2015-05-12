@@ -2,7 +2,7 @@ from wpilib import Solenoid, Talon, DigitalInput, PowerDistributionPanel
 from common import constants, quickdebug
 from . import Component
 
-AMP_THRESHOLD = 15
+AMP_THRESHOLD = 14
 
 
 class Intake(Component):
