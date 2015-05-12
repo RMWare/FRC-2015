@@ -22,7 +22,7 @@ def bits(val):
 
 
 class ADXRS453Z(object):
-	def __init__(self, port=0):
+	def __init__(self, port):
 		spi = SPI(port)
 		spi.setClockRate(4000000)  # 4 MHz (rRIO max, gyro can go high)
 		spi.setClockActiveHigh()
@@ -49,16 +49,16 @@ class ADXRS453Z(object):
 		#
 		# self._update_thread = Thread(self.update, daemon=True)
 		# self._update_thread.start()
+		self.update()
 
 	def update(self):
-		logger.info(self._data)
 		# Check parity
 		num_bits = sum([bits(c) for c in self._command])
 		if num_bits % 2 == 0:
 			self._command[3] |= PARITY_BIT
 
-		command = (ctypes.c_ubyte * DATA_SIZE)(*self._command)
-		self._data = self._spi.transaction(command)
+		self._data = self._spi.transaction(self._command)
+
 		if self._calibration_timer.get() < WARM_UP_PERIOD:
 			self._last_time = self._current_time = self._update_timer.get()
 			return

@@ -42,8 +42,10 @@ class Intake(Component):
 		self.spin(power)
 		if self.pdp.getCurrent(constants.pdp_intake_l) > AMP_THRESHOLD:
 			self._right_pwm = power * .25
+			self._left_pwm = power * .75
 		elif self.pdp.getCurrent(constants.pdp_intake_r) > AMP_THRESHOLD:
 			self._left_pwm = power * .25
+			self._right_pwm = power * .75
 
 	def intake_bin(self):
 		self.spin(.3 if not self._photosensor.get() else .65)

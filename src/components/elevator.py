@@ -68,12 +68,13 @@ class Elevator(Component):
 		if self.at_goal:
 			if self._should_drop:  # Overrides everything else
 				if self.tote_count < 6 and not self.has_game_piece:
-					self._follower._max_acc = 100  # Slow down on drop
+					self._follower._max_acc = 100  # Slow
+					#  down on drop
 				self._follower.set_goal(Setpoints.DROP)
 				self._close_stabilizer = False
 				self._new_stack = True
 			else:
-				self._follower._max_acc = 210  # Normal speed
+				self._follower._max_acc = 210  # Normal speed # TODO configurable
 				if self._new_stack:
 					self._new_stack = False
 					self._close_stabilizer = True

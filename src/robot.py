@@ -77,7 +77,10 @@ class Tachyon(SampleRobot):
 
 			if self.chandler.left_trigger():  # If we're trying to drop the stack
 				self.intake.spin(0)
-				self.intake.open()
+				if self.chandler.right_bumper():
+					self.intake.close()
+				else:
+					self.intake.open()
 				self.elevator.drop_stack()
 
 			wheel = deadband(self.chandler.right_x(), .2)
@@ -111,7 +114,7 @@ class Tachyon(SampleRobot):
 			if self.meet.b():
 				self.intake.spin(0)
 
-			if self.meet.a():
+			if self.meet.a() or self.chandler.b():
 				self.intake.spin(-1)
 			self.elevator.auto_stacking = not self.meet.right_bumper()  # Disable automatic stacking if bumper pressed
 			# Deadman's switch! very important for safety.
