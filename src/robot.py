@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 import logging
 
+from wpilib import SampleRobot, Timer, LiveWindow, run
 from hardware import hardware  # This loads all our sensors, controllers, etc.
 from components import drive, intake, pneumatics, elevator  # These must be loaded after our hardware is.
-from wpilib import SampleRobot, Timer, LiveWindow, run
-
 from robotpy_ext.autonomous import AutonomousModeSelector
-
 from common.util import deadband, AutoNumberEnum
 from common import delay
 
@@ -28,6 +26,7 @@ class States(AutoNumberEnum):
 class Tachyon(SampleRobot):
     # because robotInit is called straight from __init__
     def robotInit(self):
+        hardware.init()  # this makes everything not break
         self.drive = drive.Drive()
         self.pneumatics = pneumatics.Pneumatics()
         self.intake = intake.Intake()
@@ -51,10 +50,17 @@ class Tachyon(SampleRobot):
 
     def update_all(self):
         self.update()
+        self.update_nt()
+
+    def update_nt(self):
+        if self.nt_timer.hasPeriodPassed(.5):
+            log.info("avg l: %s" % self.intake._left_intake_amp.average)
+            log.info("avg r: %s" % self.intake._right_intake_amp.average)
 
     def disabled(self):
         while self.isDisabled():
             Timer.delay(0.01)
+            self.update_nt()
 
     def operatorControl(self):
         precise_delay = delay.PreciseDelay(CONTROL_LOOP_WAIT_TIME)
@@ -70,21 +76,27 @@ class Tachyon(SampleRobot):
             if self.state == States.STACKING:
                 if hardware.operator.left_bumper():
                     self.elevator.stack_tote_first()
+
+                if hardware.driver.a():
+                    self.elevator.manual_stack()
+
                 if self.elevator.is_full():
                     self.intake.pause()
-                elif self.elevator.has_bin:
+                elif not self.elevator.is_empty() or self.elevator.tote_first:
                     self.intake.intake_tote()
                 else:
                     self.intake.intake_bin()
+
+                if hardware.driver.right_bumper():
+                    self.intake.open()
+                else:
+                    self.intake.close()
+
             elif self.state == States.DROPPING:
                 self.elevator.drop_stack()
+                self.elevator.reset_stack()
                 self.intake.pause()
                 self.intake.open()
-
-            if hardware.driver.right_bumper():
-                self.intake.open()
-            else:
-                self.intake.close()
 
             wheel = deadband(hardware.driver.right_x(), .2)
             throttle = -deadband(hardware.driver.left_y(), .2)
@@ -123,7 +135,7 @@ class Tachyon(SampleRobot):
                     component.stop()
             else:
                 self.update()
-
+            self.update_nt()
             precise_delay.wait()
 
     def test(self):

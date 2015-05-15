@@ -1,3 +1,4 @@
+from collections import deque
 import enum
 from math import sin, pi
 
@@ -49,13 +50,13 @@ class AutoNumberEnum(enum.Enum):
         return obj
 
 
-class memoize(dict):
-    def __init__(self, func):
-        self.func = func
+class CircularBuffer(deque):
+    def __init__(self, size=0):
+        super().__init__(maxlen=size)
 
-    def __call__(self, *args):
-        return self[args]
-
-    def __missing__(self, key):
-        result = self[key] = self.func(*key)
-        return result
+    @property
+    def average(self):
+        try:
+            return sum(self) / len(self)
+        except ZeroDivisionError:
+            return 0

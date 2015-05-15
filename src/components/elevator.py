@@ -1,8 +1,7 @@
 import logging
-import math
 from hardware.syncgroup import SyncGroup
 
-from wpilib import DigitalInput, Encoder, Talon, Solenoid
+from wpilib import Talon, Solenoid
 from hardware import hardware
 from . import Component
 from motionplanning import TrajectoryFollower
@@ -32,8 +31,9 @@ class Elevator(Component):
         self.tote_count = 0
         self.has_bin = False  # Do we have a bin?
         self._reset = True  # starting a new stack?
-        self._tote_first = False  # We're stacking totes without a bin.
+        self.tote_first = False  # We're stacking totes without a bin.
         self._should_drop = False  # Are we currently trying to get a bin ?
+        self._manual_stack = False
 
         self._close_stabilizer = True  # Controlling the stabilizer
 
@@ -44,12 +44,13 @@ class Elevator(Component):
 
     def update(self):
         goal = self._follower.get_goal()
-        if self.at_goal:
+        if self.at_goal():
             self.do_stack_logic(goal)
 
         self._motor.set(self._follower.calculate(hardware.elevator_encoder.getDistance()))
         self._stabilizer_piston.set(self._close_stabilizer)
-        self._tote_first = False
+        self.tote_first = False
+        self._manual_stack = False
 
     def do_stack_logic(self, goal):
         if self._should_drop:  # Dropping should override everything else
@@ -59,7 +60,6 @@ class Elevator(Component):
                 self._follower._max_acc = 100000000000
             self._follower.set_goal(Setpoints.BOTTOM)
             self._close_stabilizer = False
-            self._reset = True
             self._should_drop = False
             return
 
@@ -67,8 +67,9 @@ class Elevator(Component):
         if self._reset:
             self._reset = False
             self._close_stabilizer = True
+
         if goal == Setpoints.BOTTOM:  # If we've just gone down to grab something
-            if self.tote_count == 0 and not self.has_bin and not self._tote_first:
+            if self.tote_count == 0 and not self.has_bin and not self.tote_first:
                 self.has_bin = True  # We just stacked the bin
             else:  # We just stacked a tote
                 self.tote_count += 1
@@ -77,10 +78,9 @@ class Elevator(Component):
             if self.tote_count >= 2:
                 self._close_stabilizer = True
         # If we try to stack a 6th tote it'll break the robot, don't do that.
-        elif hardware.game_piece_in_intake() and self.tote_count < 6:  # We have something, go down.
+        elif hardware.game_piece_in_intake() or self._manual_stack:  # We have something, go down.
             if not self.has_bin:
-                # Only auto-stack totes!!
-                if self._tote_first or self.tote_count > 0:
+                if self.tote_first or self.tote_count > 0 or self._manual_stack:
                     self._follower.set_goal(Setpoints.BOTTOM)
             else:  # We have a bin, just auto-stack.
                 self._follower.set_goal(Setpoints.BOTTOM)
@@ -89,7 +89,7 @@ class Elevator(Component):
                     self._close_stabilizer = False
         else:  # Wait for a game piece & raise the elevator
             if self.is_empty():
-                if self._tote_first:
+                if self.tote_first:
                     self._follower.set_goal(Setpoints.FIRST_TOTE)
                 else:
                     self._follower.set_goal(Setpoints.BIN)
@@ -102,6 +102,8 @@ class Elevator(Component):
         self._follower._reset = True
 
     def reset_stack(self):
+        self.tote_count = 0
+        self.has_bin = False
         self._reset = True
 
     def at_goal(self):
@@ -111,10 +113,13 @@ class Elevator(Component):
         self._should_drop = True
 
     def stack_tote_first(self):
-        self._tote_first = True
+        self.tote_first = True
 
     def is_full(self):
         return self.tote_count == 5 and hardware.game_piece_in_intake()
 
     def is_empty(self):
         return self.tote_count == 0 and not self.has_bin
+
+    def manual_stack(self):
+        self._manual_stack = True

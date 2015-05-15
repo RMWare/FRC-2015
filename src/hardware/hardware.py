@@ -15,21 +15,28 @@ def _elevator_encoder_scale():
     ticks_per_revolution = 2048
     return (pitch_diameter * math.pi) / ticks_per_revolution
 
-drive_left_encoder = Encoder(6, 7)
-drive_left_encoder.setDistancePerPulse(_drive_encoder_scale())
+
+# Stops my IDE from complaining >_>
+drive_left_encoder = drive_right_encoder = elevator_encoder = gyro = back_photosensor = side_photosensor = pdp = None
 
 
-drive_right_encoder = Encoder(4, 5)
-drive_right_encoder.setDistancePerPulse(_drive_encoder_scale())
+def init():
+    global drive_left_encoder, drive_right_encoder, elevator_encoder, gyro, back_photosensor, side_photosensor, pdp
+    drive_left_encoder = Encoder(6, 7)
+    drive_left_encoder.setDistancePerPulse(_drive_encoder_scale())
 
-elevator_encoder = Encoder(0, 1, True)
-elevator_encoder.setDistancePerPulse(_elevator_encoder_scale())
 
-gyro = Gyro(0)
+    drive_right_encoder = Encoder(4, 5)
+    drive_right_encoder.setDistancePerPulse(_drive_encoder_scale())
 
-back_photosensor = DigitalInput(8)
-side_photosensor = DigitalInput(3)
-pdp = PowerDistributionPanel()
+    elevator_encoder = Encoder(0, 1, True)
+    elevator_encoder.setDistancePerPulse(_elevator_encoder_scale())
+
+    gyro = Gyro(0)
+
+    back_photosensor = DigitalInput(8)
+    side_photosensor = DigitalInput(3)
+    pdp = PowerDistributionPanel()
 
 
 # Ports for motors & stuff
@@ -53,10 +60,12 @@ operator = XboxController(1)
 
 # Useful stuff
 def game_piece_in_intake():
-    return driver.a() or not back_photosensor.get()  # photosensor should be inverted
+    return not side_photosensor.get()  # photosensor should be inverted
+
 
 def left_intake_current():
-    pdp.getCurrent(intake_left_pdp_channel)
+    return pdp.getCurrent(intake_left_pdp_channel)
+
 
 def right_intake_current():
-    pdp.getCurrent(intake_right_pdp_channel)
+    return pdp.getCurrent(intake_right_pdp_channel)

@@ -1,7 +1,7 @@
 import logging
 import math
 
-from wpilib import Talon, Timer, Gyro
+from wpilib import Talon, Timer
 from common import util
 from hardware import hardware
 from hardware.syncgroup import SyncGroup
@@ -51,7 +51,7 @@ class Drive(Component):
         self.l_motor.set(0)
         self.r_motor.set(0)
 
-    def cheesy_drive(self, wheel, throttle, quickturn, low_gear):
+    def cheesy_drive(self, wheel, throttle, quickturn, low_gear): # TODO replace low gear with slowdown analog
         """
             Written partially by 254, ported to python & modified by 865.
             :param wheel: The speed that the robot should turn in the X direction. 1 is right [-1.0..1.0]
@@ -60,7 +60,7 @@ class Drive(Component):
         """
 
         if low_gear:
-            throttle *= 0.6 # sloow down
+            throttle *= 0.6  # sloow down
 
         neg_inertia = wheel - self.old_wheel
         self.old_wheel = wheel

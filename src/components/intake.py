@@ -1,8 +1,9 @@
 from wpilib import Solenoid, Talon, Timer
+from common.util import CircularBuffer
 from hardware import hardware
 from . import Component
 
-AMP_THRESHOLD = 14
+AMP_THRESHOLD = 15
 
 
 class Intake(Component):
@@ -17,27 +18,32 @@ class Intake(Component):
         self._right_pwm = 0
         self._open = False
 
-        self._align_timer = Timer()
-        self._align = False
+        self._left_intake_amp = CircularBuffer(25)
+        self._right_intake_amp = CircularBuffer(25)
+        self._pulse_timer = Timer()
 
     def update(self):
-        if self._align:
-            self.set(-1)
         self._l_motor.set(self._left_pwm)
         self._r_motor.set(-self._right_pwm)
         self._intake_piston.set(not self._open)
+        self._left_intake_amp.append(hardware.left_intake_current())
+        self._right_intake_amp.append(hardware.right_intake_current())
 
     def intake_tote(self):
         if hardware.game_piece_in_intake():  # anti-bounce & slowdown
-            power = 1
+            power = .8
         else:
             power = .3 if not hardware.back_photosensor.get() else 1
         self.set(power)
-        # Current-monitored anti-jam. TODO needs improvement & testing
-        if hardware.left_intake_current() > AMP_THRESHOLD or hardware.right_intake_current() > AMP_THRESHOLD:
-            if self._align_timer.hasPeriodPassed(0.5):
-                self._align_timer.start()
-                self._align = True
+
+        if self.intake_jammed() and not self._pulse_timer.running:
+            self._pulse_timer.start()
+
+        if self._pulse_timer.running:
+            self.set(-self._pulse_timer.get() / 2)
+            if self._pulse_timer.get() > .05:
+                self._pulse_timer.stop()
+                self._pulse_timer.reset()
 
     def intake_bin(self):
         power = .3 if not hardware.back_photosensor.get() else .65
@@ -63,3 +69,8 @@ class Intake(Component):
             self._right_pwm = l
         else:
             self._right_pwm = r
+
+    def intake_jammed(self):
+        if not hardware.back_photosensor.get():
+            return False
+        return self._left_intake_amp.average > AMP_THRESHOLD or self._right_intake_amp.average > AMP_THRESHOLD
