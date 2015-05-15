@@ -1,6 +1,5 @@
 import math
 from wpilib import Timer
-from common import quickdebug
 
 
 class TrajectoryFollower(object):
@@ -32,12 +31,7 @@ class TrajectoryFollower(object):
         self._kd = 0
         self._kv = .0
         self._ka = .0
-
         self._max_acc = 150
-
-        quickdebug.add_tunables(self, ["_kp", "_ki", "_kd", "_kv", "_ka"])
-        quickdebug.add_printables(self, ['_goal_position', '_error_sum', '_prev_error', '_setpoint',
-                                         ('trajectory finished?', self.trajectory_finished)])
 
     def set_goal(self, goal_position):
         self._goal_position = goal_position

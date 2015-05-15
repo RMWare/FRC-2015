@@ -1,20 +1,21 @@
 import logging
 import math
-from wpilib.spi import SPI
-from wpilib import Talon, Encoder, Timer, Gyro
-from common import util, constants, quickdebug
-from common.gyro import ADXRS453Z
-from common.syncgroup import SyncGroup
+
+from wpilib import Talon, Timer, Gyro
+from common import util
+from hardware import hardware
+from hardware.syncgroup import SyncGroup
 from . import Component
 
 
 log = logging.getLogger("drivetrain")
 
+# TODO rewrite this class, it's crappy
+
 
 class Drive(Component):
-    left_pwm = 0
-
-    right_pwm = 0
+    _left_pwm = 0
+    _right_pwm = 0
 
     # Cheesy Drive Stuff
     quickstop_accumulator = 0
@@ -35,71 +36,57 @@ class Drive(Component):
     def __init__(self):
         super().__init__()
 
-        self.l_motor = SyncGroup(Talon, constants.motor_drive_l)
-        self.r_motor = SyncGroup(Talon, constants.motor_drive_r)
+        self.l_motor = SyncGroup(Talon, hardware.drive_left)
+        self.r_motor = SyncGroup(Talon, hardware.drive_right)
 
-        self.l_encoder = Encoder(*constants.encoder_drive_l)
-        self.r_encoder = Encoder(*constants.encoder_drive_r)
-
-        DISTANCE_PER_REV = 4 * math.pi
-        TICKS_PER_REV = 128
-        REDUCTION = 30 / 36
-
-        self.l_encoder.setDistancePerPulse((DISTANCE_PER_REV * REDUCTION) / TICKS_PER_REV)
-        self.r_encoder.setDistancePerPulse((DISTANCE_PER_REV * REDUCTION) / TICKS_PER_REV)
-
-        self.gyro = Gyro(constants.gyro)
-        # self.gyro = ADXRS453Z(SPI.Port.kOnboardCS0)
         self._gyro_p = 0.12
         self._gyro_d = 0.005
         self._prev_gyro_error = 0
-        quickdebug.add_printables(self, [
-            ('gyro angle', self.gyro.getAngle),
-            ('left encoder', self.l_encoder.getDistance),
-            ('right encoder', self.r_encoder.getDistance),
-            'left_pwm', 'right_pwm', 'encoder_goal'
-        ])
-        quickdebug.add_tunables(self, ['_gyro_p', '_gyro_d'])
+
+        self.encoder_left_offset = 0
+        self.encoder_right_offset = 0
 
     def stop(self):
         """Disables EVERYTHING. Only use in case of critical failure."""
         self.l_motor.set(0)
         self.r_motor.set(0)
 
-    def reset_gyro(self):
-        pass
-        # self.gyro.reset_encoder()
-
-    def cheesy_drive(self, wheel, throttle, quickturn):
+    def cheesy_drive(self, wheel, throttle, quickturn, low_gear):
         """
-            Poofs!
+            Written partially by 254, ported to python & modified by 865.
             :param wheel: The speed that the robot should turn in the X direction. 1 is right [-1.0..1.0]
             :param throttle: The speed that the robot should drive in the Y direction. -1 is forward. [-1.0..1.0]
             :param quickturn: If the robot should drive arcade-drive style
         """
 
+        if low_gear:
+            throttle *= 0.6 # sloow down
+
         neg_inertia = wheel - self.old_wheel
         self.old_wheel = wheel
-        wheel = util.sin_scale(wheel, 0.8, passes=3)
-
-        if wheel * neg_inertia > 0:
-            neg_inertia_scalar = 2.5
+        if not low_gear:
+            wheel = util.sin_scale(wheel, 0.8, passes=2)
         else:
-            if abs(wheel) > .65:
-                neg_inertia_scalar = 5
+            wheel = util.sin_scale(wheel, 0.8, passes=3)
+        if not low_gear:
+            neg_inertia_scalar = 5
+        else:
+            if wheel * neg_inertia > 0:
+                neg_inertia_scalar = 2.5
             else:
-                neg_inertia_scalar = 3
+                if abs(wheel) > .65:
+                    neg_inertia_scalar = 5
+                else:
+                    neg_inertia_scalar = 3
 
-        neg_inertia_accumulator = neg_inertia * neg_inertia_scalar
-
-        wheel += neg_inertia_accumulator
+        wheel += neg_inertia * neg_inertia_scalar
 
         if quickturn:
             if abs(throttle) < 0.2:
                 alpha = .1
                 self.quickstop_accumulator = (1 - alpha) * self.quickstop_accumulator + alpha * util.limit(wheel, 1.0) * 5
             over_power = 1
-            angular_power = wheel * .75
+            angular_power = wheel
         else:
             over_power = 0
             angular_power = abs(throttle) * wheel * self.sensitivity - self.quickstop_accumulator
@@ -122,36 +109,37 @@ class Drive(Component):
         elif right_pwm < -1:
             left_pwm += over_power * (-1 - right_pwm)
             right_pwm = -1
-        self.left_pwm = left_pwm
-        self.right_pwm = right_pwm
+        self._left_pwm = left_pwm
+        self._right_pwm = right_pwm
 
     def tank_drive(self, left, right):
         # Applies a bit of exponential scaling to improve control at low speeds
-        self.left_pwm = math.copysign(math.pow(left, 2), left)
-        self.right_pwm = math.copysign(math.pow(right, 2), right)
+        self._left_pwm = math.copysign(math.pow(left, 2), left)
+        self._right_pwm = math.copysign(math.pow(right, 2), right)
 
     # Stuff for encoder driving
     def set_distance_goal(self, goal):
-        self.l_encoder.reset()
-        self.r_encoder.reset()
-        self.gyro_goal = self.gyro.getAngle()
+        self.encoder_left_offset = hardware.drive_left_encoder.get()
+        self.encoder_right_offset = hardware.drive_right_encoder.get()
+
+        self.gyro_goal = hardware.gyro.getAngle()
         self.encoder_goal = goal
         self.driving_distance = True
         self.driving_angle = False
 
-    def drive_distance(self):
-        l_error = util.limit(self.encoder_goal - self.l_encoder.getDistance(), 0.5)
-        r_error = util.limit(self.encoder_goal - self.r_encoder.getDistance(), 0.5)
+    def drive_distance(self):  # TODO Needs reimplementing...
+        l_error = util.limit(self.encoder_goal - hardware.drive_left_encoder.getDistance(), 0.5)
+        r_error = util.limit(self.encoder_goal - hardware.drive_right_encoder.getDistance(), 0.5)
 
-        l_speed = l_error + util.limit(self.gyro_error * self._gyro_p * 0.5, 0.3)
-        r_speed = r_error - util.limit(self.gyro_error * self._gyro_p * 0.5, 0.3)
+        l_speed = l_error + util.limit(self.gyro_error() * self._gyro_p * 0.5, 0.3)
+        r_speed = r_error - util.limit(self.gyro_error() * self._gyro_p * 0.5, 0.3)
 
-        self.left_pwm =  util.limit(l_speed, 0.5)
-        self.right_pwm = util.limit(r_speed, 0.5)
+        self._left_pwm = util.limit(l_speed, 0.5)
+        self._right_pwm = util.limit(r_speed, 0.5)
 
     def at_distance_goal(self):
-        l_error = self.encoder_goal - self.l_encoder.getDistance()
-        r_error = self.encoder_goal - self.r_encoder.getDistance()
+        l_error = self.encoder_goal + self.encoder_left_offset - hardware.drive_left_encoder.getDistance()
+        r_error = self.encoder_goal + self.encoder_right_offset - hardware.drive_right_encoder.getDistance()
         return abs(l_error) < self.encoder_tolerance and abs(r_error) < self.encoder_tolerance
 
     # Stuff for Gyro driving
@@ -163,11 +151,11 @@ class Drive(Component):
         self.driving_distance = False
 
     def turn_angle(self):
-        error = self.gyro_error
+        error = self.gyro_error()
         result = error * self._gyro_p + ((error - self._prev_gyro_error) / 0.025) * self._gyro_d
 
-        self.left_pwm = result
-        self.right_pwm = -result
+        self._left_pwm = result
+        self._right_pwm = -result
 
         self._prev_gyro_error = error
 
@@ -180,17 +168,12 @@ class Drive(Component):
                     return True
         return False
 
-    @property
     def gyro_error(self):
-        """
-        Returns gyro error wrapped from -180 to 180
-        :return:
-        """
-        raw_error = self.gyro_goal - self.gyro.getAngle()
+        """ Returns gyro error wrapped from -180 to 180 """
+        raw_error = self.gyro_goal - hardware.gyro.getAngle()
         wrapped_error = raw_error - 360 * round(raw_error / 360)
         return wrapped_error
 
     def update(self):
-        self.gyro.update()
-        self.l_motor.set(self.left_pwm)
-        self.r_motor.set(-self.right_pwm)
+        self.l_motor.set(self._left_pwm)
+        self.r_motor.set(-self._right_pwm)

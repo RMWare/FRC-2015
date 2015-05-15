@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 import logging
 
+from hardware import hardware  # This loads all our sensors, controllers, etc.
+from components import drive, intake, pneumatics, elevator  # These must be loaded after our hardware is.
 from wpilib import SampleRobot, Timer, LiveWindow, run
 
 from robotpy_ext.autonomous import AutonomousModeSelector
 
-from common.xbox import XboxController
-from common.util import deadband
-from components import drive, intake, pneumatics, elevator
-from common import delay, quickdebug
+from common.util import deadband, AutoNumberEnum
+from common import delay
 
 
 
@@ -18,12 +18,16 @@ log = logging.getLogger("robot")
 CONTROL_LOOP_WAIT_TIME = 0.025
 
 
+class States(AutoNumberEnum):
+    DROPPING = ()
+    STACKING = ()
+    CAPPING = ()
+
+
+# noinspection PyAttributeOutsideInit
 class Tachyon(SampleRobot):
-    # noinspection PyAttributeOutsideInit
     # because robotInit is called straight from __init__
     def robotInit(self):
-        self.driver = XboxController(0)
-        self.operator = XboxController(1)
         self.drive = drive.Drive()
         self.pneumatics = pneumatics.Pneumatics()
         self.intake = intake.Intake()
@@ -39,8 +43,7 @@ class Tachyon(SampleRobot):
         self.nt_timer = Timer()  # timer for SmartDashboard update so we don't use all our bandwidth
         self.nt_timer.start()
         self.autonomous_modes = AutonomousModeSelector('autonomous', self.components)
-        quickdebug.add_printables(self, ('match_time', Timer.getMatchTime))
-        quickdebug.init()
+        self.state = States.STACKING
 
     def autonomous(self):
         self.autonomous_modes.run(CONTROL_LOOP_WAIT_TIME, iter_fn=self.update_all)
@@ -48,83 +51,78 @@ class Tachyon(SampleRobot):
 
     def update_all(self):
         self.update()
-        self.update_networktables()
 
     def disabled(self):
         while self.isDisabled():
-            self.update_networktables()
             Timer.delay(0.01)
 
     def operatorControl(self):
         precise_delay = delay.PreciseDelay(CONTROL_LOOP_WAIT_TIME)
         while self.isOperatorControl() and self.isEnabled():
-            self.intake.prevent_bounce = self.elevator.has_game_piece and not self.elevator.full()  # loler1
-            if self.operator.left_bumper() or self.elevator.has_bin:
-                self.elevator.stack_tote_first()
-                if self.elevator.full():
-                    self.intake.spin(0)
-                else:
-                    self.intake.intake_tote()
+            # States!
+            if hardware.driver.left_trigger():
+                self.state = States.DROPPING
+            elif hardware.operator.right_trigger():
+                self.state = States.CAPPING
             else:
-                self.intake.intake_bin()
+                self.state = States.STACKING
 
-            self.elevator.force_stack = self.driver.a()
+            if self.state == States.STACKING:
+                if hardware.operator.left_bumper():
+                    self.elevator.stack_tote_first()
+                if self.elevator.is_full():
+                    self.intake.pause()
+                elif self.elevator.has_bin:
+                    self.intake.intake_tote()
+                else:
+                    self.intake.intake_bin()
+            elif self.state == States.DROPPING:
+                self.elevator.drop_stack()
+                self.intake.pause()
+                self.intake.open()
 
-            if self.driver.right_bumper():
+            if hardware.driver.right_bumper():
                 self.intake.open()
             else:
                 self.intake.close()
 
-            if self.driver.left_trigger():  # If we're trying to drop the stack
-                self.intake.spin(0)
-                if self.driver.right_bumper():
-                    self.intake.close()
-                else:
-                    self.intake.open()
-                self.elevator.drop_stack()
+            wheel = deadband(hardware.driver.right_x(), .2)
+            throttle = -deadband(hardware.driver.left_y(), .2)
+            quickturn = hardware.driver.left_bumper()
+            low_gear = hardware.driver.right_trigger()
+            self.drive.cheesy_drive(wheel, throttle, quickturn, low_gear)
 
-            wheel = deadband(self.driver.right_x(), .2)
-            throttle = -deadband(self.driver.left_y(), .2) * .8
-
-            if self.driver.right_trigger():
-                wheel *= 0.3
-                throttle *= 0.3
-
-            self.drive.cheesy_drive(wheel, throttle, self.driver.left_bumper())
-
-            ticks = self.driver.dpad()
-            if ticks == 180:  # down on the dpad
+            driver_dpad = hardware.driver.dpad()
+            if driver_dpad == 180:  # down on the dpad
                 self.drive.set_distance_goal(-2)
-            elif ticks == 0:
+            elif driver_dpad == 0:
                 self.drive.set_distance_goal(2)
-            elif ticks == 90:
+            elif driver_dpad == 90:
                 self.drive.set_distance_goal(-18)
 
-            dpad = self.operator.dpad()  # You can only call it once per loop, bcus dbouncing
-            if dpad == 0 and self.elevator.tote_count < 6:
-                self.elevator.add_tote()
-            elif dpad == 180 and self.elevator.tote_count > 0:
-                self.elevator.remove_tote()
-            elif dpad == 90:
-                self.elevator.set_bin(not self.elevator.has_bin)
+            operator_dpad = hardware.operator.dpad()  # You can only call it once per loop, bcus dbouncing
+            if operator_dpad == 0 and self.elevator.tote_count < 6:
+                self.elevator.tote_count += 1
+            elif operator_dpad == 180 and self.elevator.tote_count > 0:
+                self.elevator.tote_count -= 1
+            elif operator_dpad == 90:
+                self.elevator.has_bin = not self.elevator.has_bin
 
-            if self.operator.start():
-                self.elevator._new_stack = True
+            if hardware.operator.start():
+                self.elevator.reset_stack()
 
-            if self.operator.b():
-                self.intake.spin(0)
+            if hardware.operator.b():
+                self.intake.set(0)  # Pause?!
 
-            if self.operator.a() or self.driver.b():
-                self.intake.spin(-1)
-            self.elevator.auto_stacking = not self.operator.right_bumper()  # Disable automatic stacking if bumper pressed
-            # Deadman's switch! very important for safety.
-            if False and not self.ds.isFMSAttached() and not self.operator.left_trigger(): # TODO re-enable at comp
+            if hardware.operator.a() or hardware.driver.b():
+                self.intake.set(-1)
+
+            # Deadman switch. very important for safety (at competitions).
+            if not self.ds.isFMSAttached() and not hardware.operator.left_trigger() and False:  # TODO re-enable at competitions
                 for component in self.components.values():
                     component.stop()
             else:
                 self.update()
-
-            self.update_networktables()
 
             precise_delay.wait()
 
@@ -133,7 +131,6 @@ class Tachyon(SampleRobot):
             component.stop()
         while self.isTest() and self.isEnabled():
             LiveWindow.run()
-            self.update_networktables()
 
     def update(self):
         """ Calls the update functions for every component """
@@ -145,12 +142,6 @@ class Tachyon(SampleRobot):
                         log.error("In subsystem %s: %s" % (component, e))
                     else:
                         raise
-
-    def update_networktables(self):
-        if not self.nt_timer.hasPeriodPassed(0.2):  # we don't need to update every cycle
-            return
-        quickdebug.sync()
-
 
 if __name__ == "__main__":
     run(Tachyon)
