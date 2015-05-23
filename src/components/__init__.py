@@ -4,3 +4,6 @@ class Component(object):
 
     def stop(self):
         raise NotImplementedError("Component must have a 'stop' method")
+
+    def update_nt(self):
+        pass

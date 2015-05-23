@@ -1,4 +1,6 @@
 import logging
+from threading import Thread
+import time
 from hardware.syncgroup import SyncGroup
 
 from wpilib import Talon, Solenoid
@@ -15,6 +17,8 @@ class Setpoints(object):
     BIN = 14
     TOTE = 18
     FIRST_TOTE = 7
+    MAX_TRAVEL = 40.4
+    # MAX_TRAVEL = 50.4
 
 
 class Elevator(Component):
@@ -28,16 +32,20 @@ class Elevator(Component):
         # Motion Planning!
         self._follower = TrajectoryFollower()
 
+        self._calibrated = False
         self.tote_count = 0
         self.has_bin = False  # Do we have a bin?
         self._reset = True  # starting a new stack?
         self.tote_first = False  # We're stacking totes without a bin.
         self._should_drop = False  # Are we currently trying to get a bin ?
         self._manual_stack = False
+        self._cap = False
 
         self._close_stabilizer = True  # Controlling the stabilizer
 
         self._follower.set_goal(Setpoints.BIN)  # Base state
+        self._follower_thread = Thread(target=self.update_follower)
+        self._follower_thread.start()
 
     def stop(self):
         self._motor.set(0)
@@ -47,13 +55,15 @@ class Elevator(Component):
         if self.at_goal():
             self.do_stack_logic(goal)
 
-        self._motor.set(self._follower.calculate(hardware.elevator_encoder.getDistance()))
+        self._motor.set(self._follower.output)
         self._stabilizer_piston.set(self._close_stabilizer)
         self.tote_first = False
         self._manual_stack = False
+        self._cap = False
 
     def do_stack_logic(self, goal):
         if self._should_drop:  # Dropping should override everything else
+            self.reset_stack()
             if not hardware.game_piece_in_intake():
                 self._follower._max_acc = 100  # Put things down gently if there's space before the bottom tote
             else:
@@ -63,7 +73,7 @@ class Elevator(Component):
             self._should_drop = False
             return
 
-        self._follower._max_acc = 210  # Normal speed # TODO configurable
+        self._follower._max_acc = 200  # Normal speed # TODO configurable
         if self._reset:
             self._reset = False
             self._close_stabilizer = True
@@ -78,7 +88,7 @@ class Elevator(Component):
             if self.tote_count >= 2:
                 self._close_stabilizer = True
         # If we try to stack a 6th tote it'll break the robot, don't do that.
-        elif hardware.game_piece_in_intake() or self._manual_stack:  # We have something, go down.
+        elif (hardware.game_piece_in_intake() or self._manual_stack) and self.tote_count < 5:  # We have something, go down.
             if not self.has_bin:
                 if self.tote_first or self.tote_count > 0 or self._manual_stack:
                     self._follower.set_goal(Setpoints.BOTTOM)
@@ -91,6 +101,9 @@ class Elevator(Component):
             if self.is_empty():
                 if self.tote_first:
                     self._follower.set_goal(Setpoints.FIRST_TOTE)
+                elif self._cap:
+                    setpoint = Setpoints.MAX_TRAVEL - 12 * self.tote_count
+                    self._follower.set_goal(setpoint)
                 else:
                     self._follower.set_goal(Setpoints.BIN)
             else:
@@ -123,3 +136,17 @@ class Elevator(Component):
 
     def manual_stack(self):
         self._manual_stack = True
+
+    def update_nt(self):
+        log.info("position: %s" % hardware.elevator_encoder.getDistance())
+        log.info("capping? %s" % self._cap)
+        log.info("at goal? %s" % self.at_goal())
+        log.info("totes: %s" % self.tote_count)
+
+    def cap(self):
+        self._cap = True
+
+    def update_follower(self):
+        while True:
+            self._follower.calculate(hardware.elevator_encoder.getDistance())
+            time.sleep(0.005)

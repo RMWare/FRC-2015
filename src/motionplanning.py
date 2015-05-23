@@ -24,12 +24,13 @@ class TrajectoryFollower(object):
     _next_state = TrajectorySetpoint()
     _goal_position = 0.0
     _setpoint = TrajectorySetpoint()
+    output = 0
 
     def __init__(self):
-        self._kp = .35
+        self._kp = .3
         self._ki = .0
         self._kd = 0
-        self._kv = .0
+        self._kv = 0.01696945730256859
         self._ka = .0
         self._max_acc = 150
 
@@ -122,7 +123,7 @@ class TrajectoryFollower(object):
             self._error_sum += error * dt
         output += self._ki * self._error_sum
         self._prev_error = error
-        return output
+        self.output = output
 
     def trajectory_finished(self):
         return abs(self._setpoint.pos - self._goal_position) < 1E-3 and abs(self._setpoint.vel) < 1E-2

@@ -50,17 +50,10 @@ class Tachyon(SampleRobot):
 
     def update_all(self):
         self.update()
-        self.update_nt()
-
-    def update_nt(self):
-        if self.nt_timer.hasPeriodPassed(.5):
-            log.info("avg l: %s" % self.intake._left_intake_amp.average)
-            log.info("avg r: %s" % self.intake._right_intake_amp.average)
 
     def disabled(self):
         while self.isDisabled():
             Timer.delay(0.01)
-            self.update_nt()
 
     def operatorControl(self):
         precise_delay = delay.PreciseDelay(CONTROL_LOOP_WAIT_TIME)
@@ -73,30 +66,34 @@ class Tachyon(SampleRobot):
             else:
                 self.state = States.STACKING
 
+            if self.elevator.is_full():
+                self.intake.pause()
+            elif not self.elevator.has_bin and not self.elevator.tote_first:
+                self.intake.intake_bin()
+            else:
+                self.intake.intake_tote()
+
+            if hardware.driver.right_bumper():
+                self.intake.open()
+            else:
+                self.intake.close()
+
             if self.state == States.STACKING:
-                if hardware.operator.left_bumper():
+                if hardware.operator.left_bumper() or True:
                     self.elevator.stack_tote_first()
 
                 if hardware.driver.a():
                     self.elevator.manual_stack()
-
-                if self.elevator.is_full():
-                    self.intake.pause()
-                elif not self.elevator.is_empty() or self.elevator.tote_first:
-                    self.intake.intake_tote()
-                else:
-                    self.intake.intake_bin()
-
-                if hardware.driver.right_bumper():
-                    self.intake.open()
-                else:
-                    self.intake.close()
 
             elif self.state == States.DROPPING:
                 self.elevator.drop_stack()
                 self.elevator.reset_stack()
                 self.intake.pause()
                 self.intake.open()
+                if hardware.driver.right_bumper():
+                    self.intake.close()
+            elif self.state == States.CAPPING:
+                self.elevator.cap()
 
             wheel = deadband(hardware.driver.right_x(), .2)
             throttle = -deadband(hardware.driver.left_y(), .2)
@@ -135,20 +132,23 @@ class Tachyon(SampleRobot):
                     component.stop()
             else:
                 self.update()
-            self.update_nt()
             precise_delay.wait()
 
     def test(self):
-        for component in self.components.values():
-            component.stop()
         while self.isTest() and self.isEnabled():
             LiveWindow.run()
+            for component in self.components.values():
+                component.stop()
+                if self.nt_timer.hasPeriodPassed(.5):
+                    component.update_nt()
 
     def update(self):
         """ Calls the update functions for every component """
         for component in self.components.values():
                 try:
                     component.update()
+                    if self.nt_timer.hasPeriodPassed(.5):
+                        component.update_nt()
                 except Exception as e:
                     if self.ds.isFMSAttached():
                         log.error("In subsystem %s: %s" % (component, e))
