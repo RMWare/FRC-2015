@@ -51,7 +51,7 @@ class Drive(Component):
         self.l_motor.set(0)
         self.r_motor.set(0)
 
-    def cheesy_drive(self, wheel, throttle, quickturn, low_gear): # TODO replace low gear with slowdown analog
+    def cheesy_drive(self, wheel, throttle, quickturn, low_gear):  # TODO replace low gear with slowdown analog
         """
             Written partially by 254, ported to python & modified by 865.
             :param wheel: The speed that the robot should turn in the X direction. 1 is right [-1.0..1.0]
@@ -127,7 +127,7 @@ class Drive(Component):
         self.driving_distance = True
         self.driving_angle = False
 
-    def drive_distance(self):  # TODO Needs reimplementing...
+    def drive_distance(self):  # TODO Make this work
         l_error = util.limit(self.encoder_goal - hardware.drive_left_encoder.getDistance(), 0.5)
         r_error = util.limit(self.encoder_goal - hardware.drive_right_encoder.getDistance(), 0.5)
 
