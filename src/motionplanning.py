@@ -5,8 +5,8 @@ from wpilib import Timer
 class TrajectoryFollower(object):
     """
     PID + feed-forward controller for following a Trajectory.
-    Originally written by Jared341 in Java
-    Heavily modified.
+    Originally written by Jared341 in Java.
+    Python rewrite by Ari Lotter
     """
 
     class TrajectorySetpoint(object):
