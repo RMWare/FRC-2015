@@ -79,5 +79,6 @@ class Intake(Component):
         return self._left_intake_amp.average > AMP_THRESHOLD or self._right_intake_amp.average > AMP_THRESHOLD
 
     def update_nt(self):
-        log.info("left current: %s" % self._left_intake_amp.average)
-        log.info("right current: %s" % self._right_intake_amp.average)
+        pass
+        # log.info("left current: %s" % self._left_intake_amp.average)
+        # log.info("right current: %s" % self._right_intake_amp.average)

@@ -149,6 +149,7 @@ class Tachyon(SampleRobot):
                     component.update()
                     if self.nt_timer.hasPeriodPassed(.5):
                         component.update_nt()
+                        log.info("Robot state: %s" % (self.state.__repr__())) #Gets state
                 except Exception as e:
                     if self.ds.isFMSAttached():
                         log.error("In subsystem %s: %s" % (component, e))
