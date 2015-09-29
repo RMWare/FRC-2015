@@ -74,15 +74,13 @@ class Elevator(Component):
             return
 
         self._follower._max_acc = 200  # Normal speed # TODO configurable
-        if self._reset:
-            self._reset = False
-            self._close_stabilizer = True
 
         if goal == Setpoints.BOTTOM:  # If we've just gone down to grab something
             if self.tote_count == 0 and not self.has_bin and not self.tote_first:
                 self.has_bin = True  # We just stacked the bin
             else:  # We just stacked a tote
-                self.tote_count += 1
+                if not self._reset:
+                    self.tote_count += 1
 
             self._follower.set_goal(Setpoints.TOTE)  # Go back up. After stacking, you should always grab a tote.
             if self.tote_count >= 2:
@@ -108,6 +106,9 @@ class Elevator(Component):
                     self._follower.set_goal(Setpoints.BIN)
             else:
                 self._follower.set_goal(Setpoints.TOTE)
+        if self._reset:
+            self._reset = False
+            self._close_stabilizer = True
 
     def reset_encoder(self):
         hardware.elevator_encoder.reset()
