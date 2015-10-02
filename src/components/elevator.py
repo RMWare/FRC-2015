@@ -41,6 +41,8 @@ class Elevator(Component):
         self._manual_stack = False
         self._cap = False
 
+        self._close_stabilizer = True  # Controlling the stabilizer
+
         self._follower.set_goal(Setpoints.BIN)  # Base state
         self._follower_thread = Thread(target=self.update_follower)
         self._follower_thread.start()
@@ -54,7 +56,7 @@ class Elevator(Component):
             self.do_stack_logic(goal)
 
         self._motor.set(self._follower.output)
-        self._stabilizer_piston.set(not self._should_drop)
+        self._stabilizer_piston.set(self._close_stabilizer)
         self.tote_first = False
         self._manual_stack = False
         self._cap = False
@@ -67,6 +69,7 @@ class Elevator(Component):
             else:
                 self._follower._max_acc = 100000000000
             self._follower.set_goal(Setpoints.BOTTOM)
+            self._close_stabilizer = False
             self._should_drop = False
             return
 
@@ -80,13 +83,18 @@ class Elevator(Component):
                     self.tote_count += 1
 
             self._follower.set_goal(Setpoints.TOTE)  # Go back up. After stacking, you should always grab a tote.
+            if self.tote_count >= 2:
+                self._close_stabilizer = True
         # If we try to stack a 6th tote it'll break the robot, don't do that.
-        elif (hardware.game_piece_in_intake() or self._manual_stack) and self.tote_count < 4:  # We have something, go down.
+        elif (hardware.game_piece_in_intake() or self._manual_stack) and self.tote_count < 5:  # We have something, go down.
             if not self.has_bin:
                 if self.tote_first or self.tote_count > 0 or self._manual_stack:
                     self._follower.set_goal(Setpoints.BOTTOM)
             else:  # We have a bin, just auto-stack.
                 self._follower.set_goal(Setpoints.BOTTOM)
+            if self.has_bin:  # Bin Transfer! # TODO egg Marcus to make the robot not need this.
+                if self.tote_count == 1:
+                    self._close_stabilizer = False
         else:  # Wait for a game piece & raise the elevator
             if self.is_empty():
                 if self.tote_first:
@@ -100,6 +108,7 @@ class Elevator(Component):
                 self._follower.set_goal(Setpoints.TOTE)
         if self._reset:
             self._reset = False
+            self._close_stabilizer = True
 
     def reset_encoder(self):
         hardware.elevator_encoder.reset()

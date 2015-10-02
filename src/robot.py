@@ -61,8 +61,8 @@ class Tachyon(SampleRobot):
             # States!
             if hardware.driver.left_trigger():
                 self.state = States.DROPPING
-            elif hardware.operator.right_trigger():
-                self.state = States.CAPPING
+            #elif hardware.operator.right_trigger():
+               #self.state = States.CAPPING
             else:
                 self.state = States.STACKING
 
@@ -127,7 +127,7 @@ class Tachyon(SampleRobot):
                 self.intake.set(-1)
 
             # Deadman switch. very important for safety (at competitions).
-            if not self.ds.isFMSAttached() and not hardware.operator.left_trigger() and False:  # TODO re-enable at competitions
+            if not self.ds.isFMSAttached() and not hardware.operator.left_trigger():  # TODO re-enable at competitions
                 for component in self.components.values():
                     component.stop()
             else:
@@ -149,7 +149,6 @@ class Tachyon(SampleRobot):
                     component.update()
                     if self.nt_timer.hasPeriodPassed(.5):
                         component.update_nt()
-                        log.info("Robot state: %s" % (self.state.__repr__())) #Gets state
                 except Exception as e:
                     if self.ds.isFMSAttached():
                         log.error("In subsystem %s: %s" % (component, e))
