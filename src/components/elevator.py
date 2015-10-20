@@ -1,6 +1,7 @@
 import logging
 from threading import Thread
 import time
+from common.util import CircularBuffer
 from hardware.syncgroup import SyncGroup
 
 from wpilib import Talon, Solenoid
@@ -32,6 +33,8 @@ class Elevator(Component):
         # Motion Planning!
         self._follower = TrajectoryFollower()
 
+        self.assure_tote = CircularBuffer(5)
+
         self._calibrated = False
         self.tote_count = 0
         self.has_bin = False  # Do we have a bin?
@@ -39,7 +42,6 @@ class Elevator(Component):
         self.tote_first = False  # We're stacking totes without a bin.
         self._should_drop = False  # Are we currently trying to get a bin ?
         self._manual_stack = False
-        self._cap = False
 
         self._close_stabilizer = True  # Controlling the stabilizer
 
@@ -59,9 +61,9 @@ class Elevator(Component):
         self._stabilizer_piston.set(self._close_stabilizer)
         self.tote_first = False
         self._manual_stack = False
-        self._cap = False
 
     def do_stack_logic(self, goal):
+        self.assure_tote.append(hardware.game_piece_in_intake())
         if self._should_drop:  # Dropping should override everything else
             self.reset_stack()
             if not hardware.game_piece_in_intake():
@@ -86,22 +88,19 @@ class Elevator(Component):
             if self.tote_count >= 2:
                 self._close_stabilizer = True
         # If we try to stack a 6th tote it'll break the robot, don't do that.
-        elif (hardware.game_piece_in_intake() or self._manual_stack) and self.tote_count < 5:  # We have something, go down.
+        elif (self.tote_in_long_enough() or self._manual_stack) and self.tote_count < 5:  # We have something, go down.
             if not self.has_bin:
                 if self.tote_first or self.tote_count > 0 or self._manual_stack:
                     self._follower.set_goal(Setpoints.BOTTOM)
             else:  # We have a bin, just auto-stack.
                 self._follower.set_goal(Setpoints.BOTTOM)
-            if self.has_bin:  # Bin Transfer! # TODO egg Marcus to make the robot not need this.
+            if self.has_bin:  # Bin Transfer!
                 if self.tote_count == 1:
                     self._close_stabilizer = False
         else:  # Wait for a game piece & raise the elevator
             if self.is_empty():
                 if self.tote_first:
                     self._follower.set_goal(Setpoints.FIRST_TOTE)
-                elif self._cap:
-                    setpoint = Setpoints.MAX_TRAVEL - 12 * self.tote_count
-                    self._follower.set_goal(setpoint)
                 else:
                     self._follower.set_goal(Setpoints.BIN)
             else:
@@ -109,6 +108,9 @@ class Elevator(Component):
         if self._reset:
             self._reset = False
             self._close_stabilizer = True
+
+    def tote_in_long_enough(self):
+        return all(self.assure_tote)  # all thse are true, robot 100% has tote
 
     def reset_encoder(self):
         hardware.elevator_encoder.reset()
@@ -139,13 +141,9 @@ class Elevator(Component):
         self._manual_stack = True
 
     def update_nt(self):
-        log.info("position: %s" % hardware.elevator_encoder.getDistance())
-        log.info("capping? %s" % self._cap)
-        log.info("at goal? %s" % self.at_goal())
-        log.info("totes: %s" % self.tote_count)
-
-    def cap(self):
-        self._cap = True
+        # log.info("position: %s" % hardware.elevator_encoder.getDistance())
+        # log.info("at goal? %s" % self.at_goal())
+        log.info("totes: %s bin: %s tote first: %s" % (self.tote_count, self.has_bin, self.tote_first))
 
     def update_follower(self):
         while True:

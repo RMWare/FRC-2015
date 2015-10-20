@@ -19,7 +19,6 @@ CONTROL_LOOP_WAIT_TIME = 0.025
 class States(AutoNumberEnum):
     DROPPING = ()
     STACKING = ()
-    CAPPING = ()
 
 
 # noinspection PyAttributeOutsideInit
@@ -79,7 +78,7 @@ class Tachyon(SampleRobot):
                 self.intake.close()
 
             if self.state == States.STACKING:
-                if hardware.operator.left_bumper() or True:
+                if hardware.operator.left_bumper():
                     self.elevator.stack_tote_first()
 
                 if hardware.driver.a():
@@ -92,8 +91,6 @@ class Tachyon(SampleRobot):
                 self.intake.open()
                 if hardware.driver.right_bumper():
                     self.intake.close()
-            elif self.state == States.CAPPING:
-                self.elevator.cap()
 
             wheel = deadband(hardware.driver.right_x(), .2)
             throttle = -deadband(hardware.driver.left_y(), .2)
@@ -103,11 +100,14 @@ class Tachyon(SampleRobot):
 
             driver_dpad = hardware.driver.dpad()
             if driver_dpad == 180:  # down on the dpad
-                self.drive.set_distance_goal(-2)
+                #self.drive.set_distance_goal(-2)
+                pass
             elif driver_dpad == 0:
-                self.drive.set_distance_goal(2)
+                #self.drive.set_distance_goal(2)
+                pass
             elif driver_dpad == 90:
-                self.drive.set_distance_goal(-18)
+                #self.drive.set_distance_goal(-18)
+                pass
 
             operator_dpad = hardware.operator.dpad()  # You can only call it once per loop, bcus dbouncing
             if operator_dpad == 0 and self.elevator.tote_count < 6:
