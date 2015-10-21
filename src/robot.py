@@ -153,9 +153,8 @@ class Tachyon(SampleRobot):
                     if self.nt_timer.hasPeriodPassed(.5):
                         component.update_nt()
                 except Exception as e:
-                    if self.ds.isFMSAttached():
-                        log.error("In subsystem %s: %s" % (component, e))
-                    else:
+                    log.error("In subsystem %s: %s" % (component, e))
+                    if not self.ds.isFMSAttached():
                         raise
 
 if __name__ == "__main__":
