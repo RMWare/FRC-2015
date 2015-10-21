@@ -29,7 +29,7 @@ def update():
     else:
         can.configure(image=can_off)
 
-    num_totes = int(elevator.getNumber('_tote_count', 0))
+    num_totes = int(elevator.getNumber('tote_count', 0))
     for tote in totes:
         tote.configure(image=tote_off)
 

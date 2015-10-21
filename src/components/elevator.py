@@ -1,6 +1,7 @@
 import logging
 from threading import Thread
 import time
+from common import quickdebug
 from common.util import CircularBuffer
 from hardware.syncgroup import SyncGroup
 
@@ -48,6 +49,10 @@ class Elevator(Component):
         self._follower.set_goal(Setpoints.BIN)  # Base state
         self._follower_thread = Thread(target=self.update_follower)
         self._follower_thread.start()
+
+        quickdebug.add_printables(self, [
+            "has_bin", "tote_count", ("has_game_piece", self.tote_in_long_enough)
+        ])
 
     def stop(self):
         self._motor.set(0)

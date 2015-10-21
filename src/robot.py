@@ -6,7 +6,7 @@ from hardware import hardware  # This loads all our sensors, controllers, etc.
 from components import drive, intake, pneumatics, elevator  # These must be loaded after our hardware is.
 from robotpy_ext.autonomous import AutonomousModeSelector
 from common.util import deadband, AutoNumberEnum
-from common import delay
+from common import delay, quickdebug
 
 
 
@@ -139,11 +139,14 @@ class Tachyon(SampleRobot):
             LiveWindow.run()
             for component in self.components.values():
                 component.stop()
-                if self.nt_timer.hasPeriodPassed(.5):
+                if self.nt_timer.hasPeriodPassed(.3):
                     component.update_nt()
+                    quickdebug.sync()
 
     def update(self):
         """ Calls the update functions for every component """
+        if self.nt_timer.hasPeriodPassed(.1):
+            quickdebug.sync()
         for component in self.components.values():
                 try:
                     component.update()
