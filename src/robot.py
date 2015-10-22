@@ -139,22 +139,21 @@ class Tachyon(SampleRobot):
             LiveWindow.run()
             for component in self.components.values():
                 component.stop()
-                if self.nt_timer.hasPeriodPassed(.3):
+                if self.nt_timer.hasPeriodPassed(.5):
                     component.update_nt()
-                    quickdebug.sync()
 
     def update(self):
         """ Calls the update functions for every component """
-        if self.nt_timer.hasPeriodPassed(.1):
-            quickdebug.sync()
+        quickdebug.sync()
         for component in self.components.values():
                 try:
                     component.update()
                     if self.nt_timer.hasPeriodPassed(.5):
                         component.update_nt()
                 except Exception as e:
-                    log.error("In subsystem %s: %s" % (component, e))
-                    if not self.ds.isFMSAttached():
+                    if self.ds.isFMSAttached():
+                        log.error("In subsystem %s: %s" % (component, e))
+                    else:
                         raise
 
 if __name__ == "__main__":

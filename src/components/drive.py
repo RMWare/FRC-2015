@@ -2,10 +2,11 @@ import logging
 import math
 
 from wpilib import Talon, Timer
-from common import util
+from common import util, quickdebug
 from hardware import hardware
 from hardware.syncgroup import SyncGroup
 from . import Component
+
 
 
 log = logging.getLogger("drivetrain")
@@ -45,6 +46,12 @@ class Drive(Component):
 
         self.encoder_left_offset = 0
         self.encoder_right_offset = 0
+
+        quickdebug.add_printables(self, [
+            "encoder_left_offset", "encoder_right_offset", "encoder_goal", "_left_pwm", "_right_pwm", "driving_distance",
+            ('lencoder', hardware.drive_left_encoder.getDistance), ('rencoder', hardware.drive_right_encoder.getDistance),
+            ('gyro', self.gyro_error)
+        ])
 
     def stop(self):
         """Disables EVERYTHING. Only use in case of critical failure."""
@@ -122,20 +129,18 @@ class Drive(Component):
         self.encoder_left_offset = hardware.drive_left_encoder.get()
         self.encoder_right_offset = hardware.drive_right_encoder.get()
 
-        self.gyro_goal = hardware.gyro.getAngle()
+        #self.gyro_goal = hardware.gyro.getAngle()
         self.encoder_goal = goal
+
         self.driving_distance = True
         self.driving_angle = False
 
-    def drive_distance(self):  # TODO Make this work
-        l_error = util.limit(self.encoder_goal - hardware.drive_left_encoder.getDistance(), 0.5)
-        r_error = util.limit(self.encoder_goal - hardware.drive_right_encoder.getDistance(), 0.5)
+    def drive_distance(self):
+        l_error = self.encoder_goal - hardware.drive_left_encoder.getDistance()
+        r_error = self.encoder_goal - hardware.drive_right_encoder.getDistance()
 
-        l_speed = l_error + util.limit(self.gyro_error() * self._gyro_p * 0.5, 0.3)
-        r_speed = r_error - util.limit(self.gyro_error() * self._gyro_p * 0.5, 0.3)
-
-        self._left_pwm = util.limit(l_speed, 0.5)
-        self._right_pwm = util.limit(r_speed, 0.5)
+        self._left_pwm = l_error
+        self._right_pwm = r_error
 
     def at_distance_goal(self):
         l_error = self.encoder_goal + self.encoder_left_offset - hardware.drive_left_encoder.getDistance()
@@ -152,7 +157,7 @@ class Drive(Component):
 
     def turn_angle(self):
         error = self.gyro_error()
-        result = error * self._gyro_p + ((error - self._prev_gyro_error) / 0.025) * self._gyro_d
+        result = error * self._gyro_p #+ (error - self._prev_gyro_error) * self._gyro_d
 
         self._left_pwm = result
         self._right_pwm = -result
@@ -164,7 +169,7 @@ class Drive(Component):
         if on:
             if not self.gyro_timer.running:
                 self.gyro_timer.start()
-            if self.gyro_timer.hasPeriodPassed(.3):
+            if self.gyro_timer.hasPeriodPassed(.2):
                     return True
         return False
 
