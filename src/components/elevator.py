@@ -34,7 +34,7 @@ class Elevator(Component):
         # Motion Planning!
         self._follower = TrajectoryFollower()
 
-        self.assure_tote = CircularBuffer(5)
+        self.assure_tote = CircularBuffer(10)
 
         self._calibrated = False
         self.tote_count = 0

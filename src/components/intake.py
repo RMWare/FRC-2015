@@ -52,6 +52,9 @@ class Intake(Component):
         power = .3 if not hardware.back_photosensor.get() else .65
         self.set(power, power)
 
+    def outtake_tote(self):
+        self.set(-1, -1)
+
     def pause(self):
         self.set(0)
 
