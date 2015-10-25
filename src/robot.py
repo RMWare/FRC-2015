@@ -7,6 +7,7 @@ from components import drive, intake, pneumatics, elevator  # These must be load
 from robotpy_ext.autonomous import AutonomousModeSelector
 from common.util import deadband, AutoNumberEnum
 from common import delay, quickdebug
+from autonomous import ThreeToteMKII
 
 
 
@@ -37,14 +38,13 @@ class Tachyon(SampleRobot):
             'intake': self.intake,
             'elevator': self.elevator,
         }
-
+        self.auto = ThreeToteMKII(self.components)
         self.nt_timer = Timer()  # timer for SmartDashboard update so we don't use all our bandwidth
         self.nt_timer.start()
-        self.autonomous_modes = AutonomousModeSelector('autonomous', self.components)
         self.state = States.STACKING
 
     def autonomous(self):
-        self.autonomous_modes.run(CONTROL_LOOP_WAIT_TIME, iter_fn=self.update_all)
+        self.auto.iterate(CONTROL_LOOP_WAIT_TIME)
         Timer.delay(CONTROL_LOOP_WAIT_TIME)
 
     def update_all(self):
