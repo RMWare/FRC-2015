@@ -7,8 +7,7 @@ from components import drive, intake, pneumatics, elevator  # These must be load
 from robotpy_ext.autonomous import AutonomousModeSelector
 from common.util import deadband, AutoNumberEnum
 from common import delay, quickdebug
-from autonomous import ThreeToteMKII
-
+from src.autonomous.ThreeToteMKII import ThreeToteMKII
 
 
 log = logging.getLogger("robot")
@@ -44,8 +43,9 @@ class Tachyon(SampleRobot):
         self.state = States.STACKING
 
     def autonomous(self):
-        self.auto.iterate(CONTROL_LOOP_WAIT_TIME)
-        Timer.delay(CONTROL_LOOP_WAIT_TIME)
+        while self.isAutonomous() and self.isEnabled():
+            self.auto.iterate(CONTROL_LOOP_WAIT_TIME)
+            Timer.delay(CONTROL_LOOP_WAIT_TIME)
 
     def update_all(self):
         self.update()

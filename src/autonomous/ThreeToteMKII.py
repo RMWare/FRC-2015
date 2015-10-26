@@ -1,7 +1,10 @@
 '''
 Three tote auto without the broken StatefulAutonomous
 '''
-from autonomous import TachyAutonomous
+from . import TachyAutonomous
+import logging
+
+log = logging.getLogger('robot')
 
 FIRST_IN_SEQUENCE = 'get_first_tote'
 END = 'end'
@@ -9,13 +12,14 @@ END = 'end'
 class ThreeToteMKII(TachyAutonomous):
 
     def __init__(self, components):
-        super.__init__(components, FIRST_IN_SEQUENCE, END)
+        super().__init__(components, FIRST_IN_SEQUENCE, END)
         #Enable if you want to use timed states
         #self.timer = 0
         #self.time_goal = 0
 
     #Iterates through every control loop
     def iterate(self, time):
+        log.info('iterating')
         '''
         #Un-comment if you want to use timed states
         #To implement a timer as the goal, simply change the timer variable to anything above 0
@@ -35,8 +39,8 @@ class ThreeToteMKII(TachyAutonomous):
             self.drive.drive_angle()
             self.goal = self.drive.at_angle_goal()
         else:
-            self.goal = True
-        super()
+            self.goal = False
+        super().iterate()
 
     #All states. Returns name of next state.
     def get_first_tote(self):
