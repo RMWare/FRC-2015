@@ -1,0 +1,102 @@
+from robotpy_ext.autonomous import StatefulAutonomous, state, timed_state
+## noinspect on PyUnresolvedReferences
+# Because python is dynamic and can do crazy crap, some IDEs complain that the subsystems
+# aren't accessible in this object. They are, and the above comment fixes it for IntelliJ IDEA
+from autonomous import distance_state, angle_state
+
+
+class ThreeTote(StatefulAutonomous):
+	MODE_NAME = 'Three totes in auto zone'
+	DEFAULT = True
+
+	def __init__(self, components):
+		super().__init__(components)
+		self.at_distance = self.drive.at_distance_goal
+		self.at_angle = self.drive.at_angle_goal
+
+	def on_iteration(self, tm):
+		self.elevator.auton()
+		super(ThreeTote, self).on_iteration(tm)
+
+	@timed_state(duration=1, first=True, next_state='nudge')
+	def start(self):
+		self.intake.open()
+
+	@distance_state(next_state='knock_first_bin')
+	def nudge(self):
+		self.drive.set_distance_goal(15)
+		self.intake.spin(1)
+
+	@angle_state(next_state='realign_first_bin')
+	def knock_first_bin(self):
+		self.drive.set_angle_goal(30)
+		self.intake.spin(-1)
+
+	@angle_state(next_state='drive_towards_second_tote')
+	def realign_first_bin(self):
+		self.drive.set_angle_goal(0)
+
+	@distance_state(next_state='nudge_second_tote')
+	def drive_towards_second_tote(self):
+		self.intake.spin(1)
+		self.drive.set_distance_goal(50)
+
+	@state()
+	def nudge_second_tote(self):
+		self.at_goal_state = 'knock_second_bin'
+		self.drive.set_distance_goal(15)
+		self.next_state('drive_distance')
+
+	@state()
+	def knock_second_bin(self):
+		self.intake.spin(-1)
+		self.at_goal_state = 'realign_second_bin'
+		self.drive.set_angle_goal(30)
+		self.next_state('drive_angle')
+
+	@state()
+	def realign_second_bin(self):
+		self.at_goal_state = 'drive_towards_last_tote'
+		self.drive.set_angle_goal(0)
+		self.next_state('drive_angle')
+
+	@state()
+	def drive_towards_last_tote(self):
+		self.at_goal_state = 'turn_towards_zone'
+		self.drive.set_distance_goal(75)
+		self.next_state('drive_distance')
+		self.intake.spin(1)
+		self.intake.open()
+
+	@state()
+	def turn_towards_zone(self):
+		self.intake.close()
+		self.drive.set_angle_goal(90)
+		self.at_goal_state = 'drive_towards_zone'
+		self.next_state('drive_angle')
+
+	@state()
+	def drive_towards_zone(self):
+		self.drive.set_distance_goal(6 * 12)
+		self.at_goal_state = 'drop'
+		self.next_state('drive_distance')
+
+	@timed_state(duration=0.3, next_state='stop')
+	def drop(self):
+		self.drive.tank_drive(0, 0)
+		self.intake.open()
+		self.elevator.drop_stack()
+
+	@state()
+	def leave_zone(self):
+		self.elevator.drop_stack()
+		self.drive.set_distance_goal(-4 * 12)
+		self.next_state('drive_distance')
+		self.at_goal_state = 'stop'
+
+	@state()
+	def stop(self):
+		self.intake.close()
+		self.intake.spin(-.5)
+		self.elevator.drop_stack()
+		self.drive.tank_drive(0, 0)
