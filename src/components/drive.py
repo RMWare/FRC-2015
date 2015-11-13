@@ -29,6 +29,8 @@ class Drive(Component):
     encoder_goal = 0
     encoder_tolerance = 1  # Inches
 
+    auto_speed_limit = 0.5
+
     def __init__(self):
         super().__init__()
 
@@ -138,14 +140,14 @@ class Drive(Component):
         self.driving_angle = False
 
     def drive_distance(self):
-        l_error = util.limit(self.encoder_goal - self.l_encoder.getDistance(), 0.5)
-        r_error = util.limit(self.encoder_goal - self.r_encoder.getDistance(), 0.5)
+        l_error = self.encoder_goal - self.l_encoder.getDistance()
+        r_error = self.encoder_goal - self.r_encoder.getDistance()
+        #
+        # l_speed = l_error + util.limit(self.gyro_error * self._gyro_p * 0.5, 0.3)
+        # r_speed = r_error - util.limit(self.gyro_error * self._gyro_p * 0.5, 0.3)
 
-        l_speed = l_error + util.limit(self.gyro_error * self._gyro_p * 0.5, 0.3)
-        r_speed = r_error - util.limit(self.gyro_error * self._gyro_p * 0.5, 0.3)
-
-        self.left_pwm = util.limit(l_speed, 0.5)
-        self.right_pwm = util.limit(r_speed, 0.5)
+        self.left_pwm = util.limit(l_error, self.auto_speed_limit)
+        self.right_pwm = util.limit(r_error, self.auto_speed_limit)
 
     def at_distance_goal(self):
         l_error = self.encoder_goal - self.l_encoder.getDistance()
@@ -184,7 +186,7 @@ class Drive(Component):
         Returns gyro error wrapped from -180 to 180
         :return:
         """
-        raw_error = self.gyro_goal - self.gyro.getAngle()
+        raw_error = self.gyro_goal + self.gyro.getAngle()  # gyro upside down
         wrapped_error = raw_error - 360 * round(raw_error / 360)
         return wrapped_error
 
