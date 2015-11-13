@@ -41,7 +41,7 @@ class ThreeTote(StatefulAutonomous):
 
     @state()
     def move_toward_tote2(self):
-        self.drive.set_distance_goal(47)
+        self.drive.set_distance_goal(48)
         self.at_goal_state = 'turn_to_tote2'
         self.next_state('drive_distance')
 
@@ -66,14 +66,14 @@ class ThreeTote(StatefulAutonomous):
 
     @state()
     def turn_away_from_tote2(self):
-        self.drive.set_angle_goal(30)
+        self.drive.set_angle_goal(27)
         # self.intake.spin(-1)
         self.at_goal_state = 'move_toward_tote3'
         self.next_state('drive_angle')
 
     @state()
     def move_toward_tote3(self): # TODO
-        self.drive.set_distance_goal(45*1.7)
+        self.drive.set_distance_goal(45*1.77)
         self.at_goal_state = 'turn_to_tote3'
         self.next_state('drive_distance')
 
@@ -103,7 +103,7 @@ class ThreeTote(StatefulAutonomous):
 
     @state()
     def go_to_win(self):
-        self.drive.set_distance_goal(15*1.5)
+        self.drive.set_distance_goal(15*2.75)
         self.at_goal_state = 'win'
         self.next_state('drive_distance')
 
