@@ -10,10 +10,13 @@ class ThreeTote(StatefulAutonomous):
 
     spin_direction = -1
     at_goal_state = ''
+    drop = False
 
     def on_iteration(self, tm):
         self.elevator.auton()
         self.drive.auto_drive()
+        if drop:
+            self.elevator.drop_stack()
         super(ThreeTote, self).on_iteration(tm)
 
     @state()
@@ -35,7 +38,7 @@ class ThreeTote(StatefulAutonomous):
 
     @state()
     def turn_away_from_tote1(self):
-        self.drive.set_angle_goal(30.7)
+        self.drive.set_angle_goal(30)
         self.at_goal_state = 'move_toward_tote2'
         self.next_state('drive_angle')
 
@@ -109,7 +112,7 @@ class ThreeTote(StatefulAutonomous):
 
     @timed_state(next_state='secure_win', duration=0.5)
     def win(self):
-        self.elevator.drop_stack()
+        self.drop = True
         self.intake.open()
         self.intake.spin(-1)
         self.next_state('drive_distance')
@@ -117,7 +120,6 @@ class ThreeTote(StatefulAutonomous):
     @state()
     def secure_win(self):
         self.drive.set_distance_goal(-50*1.5)
-        self.elevator.drop_stack()
         self.at_goal_state = 'stop'
         self.next_state('drive_distance')
 
@@ -125,4 +127,3 @@ class ThreeTote(StatefulAutonomous):
     def stop(self):
         self.intake.close()
         self.intake.spin(0)
-        self.elevator.drop_stack()
