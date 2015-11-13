@@ -1,12 +1,17 @@
+import logging
 from wpilib import Compressor
 from . import Component
+from common import quickdebug
 
+log = logging.getLogger("robot")
 
 class Pneumatics(Component):
 
     def __init__(self):
         super().__init__()
         self.comp = Compressor()
+
+        quickdebug.add_printables(self, [('comp enabled', self.comp.enabled)])
 
     def update(self):
         """

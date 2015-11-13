@@ -1,6 +1,6 @@
-from collections import deque
 import enum
 from math import sin, pi
+from collections import deque
 
 
 def deadband(val, dead):

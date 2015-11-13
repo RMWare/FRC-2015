@@ -42,7 +42,7 @@ class TrajectoryFollower(object):
         return self._goal_position
 
     def calculate(self, position):
-        dt = .025
+        dt = 0.005
         if not self._reset:
             now = Timer.getFPGATimestamp()
             dt = now - self._last_timestamp
@@ -130,5 +130,4 @@ class TrajectoryFollower(object):
 
     def get_setpoint(self):
         return self._setpoint
-
 
