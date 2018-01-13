@@ -1,12 +1,4 @@
-tachyon
-=====
+Team 2070 Robot Code (Python)
 
-started from the bottom now we here
+Utilizing code from Team 865 (Thanks!) and RobotPy (https://robotpy.readthedocs.io/en/stable/getting_started.html).
 
-    ██╗    ██╗ █████╗ ██████╗ ██████╗ ███████╗
-    ██║    ██║██╔══██╗██╔══██╗██╔══██╗╚════██║
-    ██║ █╗ ██║███████║██████╔╝██████╔╝    ██╔╝
-    ██║███╗██║██╔══██║██╔══██╗██╔═══╝    ██╔╝ 
-    ╚███╔███╔╝██║  ██║██║  ██║██║        ██║  
-     ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝        ╚═╝  
-                                          
